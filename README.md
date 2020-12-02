@@ -1,6 +1,9 @@
 # My-TTGO-Watch
 
-![watch](images/watch.png?raw=true "watch")![watch](images/bluebox.png?raw=true "watch")![watch](images/iplookup.png?raw=true "watch")![watch](images/portscan.png?raw=true "watch")
+![watch](images/watch.png?raw=true "watch")
+![watch](images/bluebox.png?raw=true "watch")
+![watch](images/iplookup.png?raw=true "watch")
+![watch](images/portscan.png?raw=true "watch")
 
 An alternative firmware for the TTGO smartwatch based on ESP32 from LilyGo. Currently under active development (check back often for new functionality) 
 
