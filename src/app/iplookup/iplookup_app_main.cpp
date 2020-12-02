@@ -95,17 +95,17 @@ void fetch_ip_info( void ) {
     label = lv_label_create(iplookup_result_cont, NULL);
     lv_label_set_long_mode(label, LV_LABEL_LONG_BREAK);
     lv_obj_set_width(label, lv_disp_get_hor_res(NULL)); 
-    strcpy(status, doc["status"]);
+    strncpy(status, doc["status"], 15);
     if(strcmp(status, "fail") == 0)
     {
         // may be rfc1918 or localhost or something
         lv_label_set_text(label, "No data for query");
         return; 
     }
-    strcpy(cnt, doc["country"]);
-    strcpy(reg, doc["regionName"]);
-    strcpy(cit, doc["city"]); 
-    strcpy(asn, doc["as"]); 
+    strncpy(cnt, doc["country"], 63);
+    strncpy(reg, doc["regionName"], 71);
+    strncpy(cit, doc["city"],71); 
+    strncpy(asn, doc["as"], 125); 
     lv_label_set_text_fmt(label, "%s\n"
                                  "%s\n"
                                  "%s\n"
