@@ -23,7 +23,6 @@
 
 #include "subnet_app.h"
 #include "subnet_app_main.h"
-#include "subnet_app_setup.h"
 
 #include "gui/mainbar/mainbar.h"
 #include "gui/statusbar.h"
@@ -75,7 +74,6 @@ void subnet_app_setup( void ) {
 
     // init main and setup tile, see subnet_app_main.cpp and subnet_app_setup.cpp
     subnet_app_main_setup( subnet_app_main_tile_num );
-    subnet_app_setup_setup( subnet_app_setup_tile_num );
 }
 
 /*
@@ -83,13 +81,6 @@ void subnet_app_setup( void ) {
  */
 uint32_t subnet_app_get_app_main_tile_num( void ) {
     return( subnet_app_main_tile_num );
-}
-
-/*
- *
- */
-uint32_t subnet_app_get_app_setup_tile_num( void ) {
-    return( subnet_app_setup_tile_num );
 }
 
 /*
