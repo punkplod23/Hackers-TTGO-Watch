@@ -31,14 +31,14 @@ or simple press "build and upload" in platformIO.
 
 # Improving battery life / stability
 
-* I have found it best for stability to use just the wifi and keep the bluetooth disabled for now 
-* I set a plain black background via the settings which seems to make the screenshot process more stable
+* I have found it best for battery AND stability to use just the wifi and keep the bluetooth disabled for now     
+* I set a plain black background via the settings which seems to make the screenshot process more stable (still some reboots)    
 
 # Apps    
 
 ## New:-    
 *Bluebox*     - bluebox for the phreaks (add the included mp3 files to SPIFFS using the webserver upload tool)     
-*Netscan*     - Connect based port scanner (may be slow with down hosts but select() seems flaky on this platform(?))    
+*Netscan*     - Simple connect() based port scanner (slow with unreachable/blocked hosts - is there a better way working for ESP32?)    
 *Subnet*      - Simple subnet calculator to see how many hosts / valid hosts    
 *Ping*        - Ping some IP address     
 *IP Lookup*   - Lookup who owns an IP via the ip-info API    
