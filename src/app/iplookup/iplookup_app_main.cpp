@@ -58,7 +58,6 @@ void fetch_ip_info( void ) {
     char cnt[64];
     char reg[64];
     char cit[64];
-    char isp[128];
     char asn[128];
     int httpcode = -1;
     lv_obj_t * label;
@@ -106,18 +105,15 @@ void fetch_ip_info( void ) {
     strcpy(cnt, doc["country"]);
     strcpy(reg, doc["regionName"]);
     strcpy(cit, doc["city"]); 
-    strcpy(isp, doc["isp"]); 
     strcpy(asn, doc["as"]); 
     lv_label_set_text_fmt(label, "%s\n"
                                  "%s\n"
                                  "%s\n"
-                                 "%s\n"
                                  "%s\n",
-                                 cnt,reg,cit,isp,asn);
+                                 cnt,reg,cit,asn);
     log_i("country: %s", cnt);
     log_i("region: %s", reg);
     log_i("city: %s", cit);
-    log_i("isp: %s", isp);
     log_i("asn: %s", asn);
     doc.clear();
     return;
