@@ -38,7 +38,6 @@
 #include "mainbar/setup_tile/display_settings/display_settings.h"
 #include "mainbar/setup_tile/move_settings/move_settings.h"
 #include "mainbar/setup_tile/time_settings/time_settings.h"
-#include "mainbar/setup_tile/update/update.h"
 #include "mainbar/setup_tile/wlan_settings/wlan_settings.h"
 #include "mainbar/setup_tile/bluetooth_settings/bluetooth_settings.h"
 #include "mainbar/setup_tile/sound_settings/sound_settings.h"
@@ -74,7 +73,6 @@ void gui_setup( void )
     wlan_settings_tile_setup();
     bluetooth_settings_tile_setup();
     time_settings_tile_setup();
-    update_tile_setup();
     utilities_tile_setup();
     sound_settings_tile_setup();
 

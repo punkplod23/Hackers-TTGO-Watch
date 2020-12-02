@@ -1,20 +1,16 @@
-<p align="center">
-<img src="https://img.shields.io/github/last-commit/sharandac/My-TTGO-Watch.svg?style=for-the-badge" />
-&nbsp;
-<img src="https://img.shields.io/github/license/sharandac/My-TTGO-Watch.svg?style=for-the-badge" />
-&nbsp;
-<a href="https://www.buymeacoffee.com/sharandac" target="_blank"><img src="https://img.shields.io/badge/Buy%20me%20a%20coffee-%E2%82%AC5-orange?style=for-the-badge&logo=buy-me-a-coffee" /></a>
-</p>
-<hr/>
-
 # My-TTGO-Watch
 
-A smartwatch based on ESP32 from LilyGo. Currently under development.
+An alternative firmware for the TTGO smartwatch based on ESP32 from LilyGo. Currently under active development (check back often for new functionality) 
 
-# Telegram chatgroup
+Forked from the excellent firmware by sharandac https://github.com/sharandac/My-TTGO-Watch with some small fixes and different apps. 
 
-Telegram chatgroup is here:
-https://t.me/TTGO_Watch
+* Removed crypto ticker
+* Removed weather app
+* Removed FTP server (TODO: will try to add SSH server for SCP) 
+* Removed osmand mapping app
+* Removed some of the haptic motor stuff
+* Removed update feature for now (TODO: probably to update over SSH) 
+* Fixed a sound issue with wav/mp3 playback
 
 # Install
 
@@ -28,28 +24,35 @@ or simple press "build and upload" in platformIO.
 
 # known issues
 
-* the webserver crashes the ESP32 really often
 * the battery indicator is not accurate, rather a problem with the power management unit ( axp202 )
 * from time to time the esp32 crashes accidentally
 * and some other small things
 
-# how to use
+# Improving battery life / stability
 
-## weather app
+* I have found it best for stability to use just the wifi and keep the bluetooth disabled for now 
+* I set a plain black background via the settings which seems to make the screenshot process more stable
 
-On startup you see the main screen (time tile). It show the time and the current weather (if correct configure). Now you can swipe with you fingers up, down, left and right between the four main screens. The four screens are organized in time, apps, note and setup tile.
-For the weather app you need an openweather.com api-id. http://openweathermap.org/appid is a good starting point.
+# Apps
 
-## bluetooth
+## New:-
+*Bluebox*     - bluebox for the phreaks (add the included mp3 files to SPIFFS using the webserver upload tool) 
+*Netscan*     - Connect based port scanner (may be slow with down hosts but select() seems flaky on this platform(?)) 
+*Subnet*      - Simple subnet calculator to see how many hosts / valid hosts
+*Ping*        - Ping some IP address 
+*IP Lookup*   - Lookup who owns an IP via the ip-info API
 
-The bluetooth notification work with [gadgetbridge](https://gadgetbridge.org) very well. But keep in mind, bluetooth in standby reduces the battery runtime. In connection with [OsmAnd](https://osmand.net) the watch can also be used for navigation. Please use the osmand app, otherwise a lot of messages will be displayed.
+## Existing:-
+*IR Remote*   - IR remote 
+*Power Meter* - Information from an electricity meter(?)
+*Stopwatch*   - Stopwatch
+*Alarm*       - Alarm clock
 
-# Forks that are recommended
+# Call for ideas
 
-[FantasyFactory](https://github.com/FantasyFactory/My-TTGO-Watch)<br>
-[NorthernDIY](https://github.com/NorthernDIY/My-TTGO-Watch)<br>
-
-# for the programmers
+If you have something you would like to see built for the watch (especially network/security tools) then please let me know using github issues. I will also make a tutorial about how to program your own apps shortly. 
+ 
+# For the programmers
 
 Internal RAM is very limited, use PSRAM as much as possible. When you work with ArduinoJson, include this
 
@@ -87,24 +90,8 @@ There is a configuration tile to enable/disable all sound output and set the glo
 # how to make a screenshot
 The firmware has an integrated webserver. Over this a screenshot can be triggered. The image has the format RGB565 and can be read with gimp. From bash it look like this
 ```bash
-wget x.x.x.x/shot ; wget x.x.x.x/screen.565
+wget x.x.x.x/shot && wget x.x.x.x/screen.data
 ```
-
-# Interface
-
-![screenshot](https://github.com/sharandac/My-TTGO-Watch/blob/master/images/screen1.png)
-![screenshot](https://github.com/sharandac/My-TTGO-Watch/blob/master/images/screen2.png)
-![screenshot](https://github.com/sharandac/My-TTGO-Watch/blob/master/images/screen3.png)
-![screenshot](https://github.com/sharandac/My-TTGO-Watch/blob/master/images/screen4.png)
-![screenshot](https://github.com/sharandac/My-TTGO-Watch/blob/master/images/screen5.png)
-![screenshot](https://github.com/sharandac/My-TTGO-Watch/blob/master/images/screen6.png)
-![screenshot](https://github.com/sharandac/My-TTGO-Watch/blob/master/images/screen7.png)
-![screenshot](https://github.com/sharandac/My-TTGO-Watch/blob/master/images/screen8.png)
-![screenshot](https://github.com/sharandac/My-TTGO-Watch/blob/master/images/screen9.png)
-![screenshot](https://github.com/sharandac/My-TTGO-Watch/blob/master/images/screen10.png)
-![screenshot](https://github.com/sharandac/My-TTGO-Watch/blob/master/images/screen11.png)
-
-
 # Contributors
 
 Special thanks to the following people for their help:
@@ -134,8 +121,3 @@ and the following projects:
 [pubsubclient](https://github.com/knolleary/pubsubclient)<br>
 
 Every Contribution to this repository is highly welcome! Don't fear to create pull requests which enhance or fix the project, you are going to help everybody.
-<p>
-If you want to donate to the author then you can buy me a coffee.
-<br/><br/>
-<a href="https://www.buymeacoffee.com/sharandac" target="_blank"><img src="https://img.shields.io/badge/Buy%20me%20a%20coffee-%E2%82%AC5-orange?style=for-the-badge&logo=buy-me-a-coffee" /></a>
-</p>

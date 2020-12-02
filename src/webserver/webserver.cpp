@@ -27,7 +27,6 @@
 #include <AsyncTCP.h>
 #include <ESPAsyncWebServer.h>
 #include <SPIFFSEditor.h>
-#include <ESP32SSDP.h>
 
 #include "webserver.h"
 #include "config.h"
@@ -120,7 +119,7 @@ void handleUpdate( AsyncWebServerRequest *request, const String& filename, size_
    * After write Update restart
    */
   if (final) {
-    AsyncWebServerResponse *response = request->beginResponse(302, "text/plain", "Please wait while the switch reboots");
+    AsyncWebServerResponse *response = request->beginResponse(302, "text/plain", "Please wait while the watch reboots");
     response->addHeader("Refresh", "20");  
     response->addHeader("Location", "/");
     request->send(response);
@@ -156,19 +155,14 @@ void asyncwebserver_start(void){
       "<meta http-equiv='Content-type' content='text/html; charset=utf-8'>"
       "<title>Web Interface</title>"
       "</head><body>"
-      "<h1>TTGo Watch Web Server</h1>"
-      "<p>This is your device, program it as you see fit."
-      "<p>Here are some URLs the device already supports, which you might find helpful:"
+      "<h1>TTGo Watch</h1>"
+      "<p>URL:"
       "<ul>"
-      "<li><a target=\"cont\" href=\"/info\">/info</a> - Display information about the device"
-      "<li><a target=\"cont\" href=\"/network\">/network</a> - Display network information"
-      "<li><a target=\"cont\" href=\"/shot\">/shot</a> - Capture a screen shot"
-      "<li><a target=\"cont\" href=\"/screen.data\">/screen.data</a> - Retrieve the image in RGB565 format, open it with gimp"
-      "<li><a target=\"_blank\" href=\"/edit\">/edit</a> - View, edit, upload, and delete files"
+      "<li><a target=\"cont\" href=\"/info\">/info</a> - Device information"
+      "<li><a target=\"cont\" href=\"/network\">/network</a> - Network information"
+      "<li><a target=\"cont\" href=\"/shot\">/shot</a> - Capture screenshot"
+      "<li><a target=\"_blank\" href=\"/edit\">/edit</a> - View, edit, upload or delete files"
       "</ul>"
-      "<p><div style=\"color:red;\">Caution:</div> Use these with care:"
-      "<ul><li><a target=\"cont\"  href=\"/reset\">/reset</a> Reboot the device"
-      "<li><a target=\"_top\" href=\"/update\">/update</a> Transmit a firmware update through POST request"
       "</body></html>";
     request->send(200, "text/html", html);
   });
@@ -177,7 +171,21 @@ void asyncwebserver_start(void){
     FlashMode_t mode = ESP.getFlashChipMode();
     int SketchFull = ESP.getSketchSize() + ESP.getFreeSketchSpace();
 
-    String html = (String) "<html><head><meta charset=\"utf-8\"></head><body><h3>Information</h3>" +
+    time_t now;
+    char strftime_buf[64];
+    struct tm timeinfo;
+
+    time(&now);
+    setenv("TZ", "UTC", 1);
+    tzset();
+
+    localtime_r(&now, &timeinfo);
+    strftime(strftime_buf, sizeof(strftime_buf), "%c", &timeinfo);
+
+    String html = (String) "<html><head><meta charset=\"utf-7\"></head><body><h3>Information</h3>" +
+                  "<b><u>Time</u></b><br>" +
+                  "<b>UTC: </b>" + strftime_buf + "<br><br>" +  
+
                   "<b><u>Memory</u></b><br>" +
                   "<b>Heap size: </b>" + ESP.getHeapSize() + "<br>" +
                   "<b>Heap free: </b>" + ESP.getFreeHeap() + "<br>" +
@@ -187,17 +195,12 @@ void asyncwebserver_start(void){
                   "<b>Psram free: </b>" + ESP.getFreePsram() + "<br>" +
 
                   "<br><b><u>System</u></b><br>" +
-                  "\t<b>Battery voltage: </b>" + TTGOClass::getWatch()->power->getBattVoltage() / 1000 + " Volts" + "<br>" +
-
                   "\t<b>Uptime: </b>" + millis() / 1000 + "<br>" +
                   "<br><b><u>Chip</u></b>" +
                   "<br><b>SdkVersion: </b>" + String(ESP.getSdkVersion()) + "<br>" +
                   "<b>CpuFreq: </b>" + String(ESP.getCpuFreqMHz()) + " MHz<br>" +
                   
                   "<br><b><u>Flash</u></b><br>" +
-                  "<b>FlashChipSpeed: </b>" + String(ESP.getFlashChipSpeed() / 1000000) + " MHz<br>" +
-                  "<b>Flash mode: </b>" + String( mode == FM_QIO ? "QIO" : mode == FM_QOUT ? "QOUT" : mode == FM_DIO ? "DIO" : mode == FM_DOUT ? "DOUT" : "UNKNOWN") + "</b><br>" +
-                  "<b>Flash sector size: </b>" + String( SPI_FLASH_SEC_SIZE) + "<br>" +
                   "<b>FlashChipMode: </b>" + ESP.getFlashChipMode() + "<br>" +
                   "<b>FlashChipSize (SDK): </b>" + ESP.getFlashChipSize() + "<br>" +
                   
@@ -227,15 +230,19 @@ void asyncwebserver_start(void){
                   "<b>RSSI: </b>" + String(WiFi.RSSI()) + "dB<br>" +
                   "<b>Hostname: </b>" + WiFi.getHostname() + "<br>" +
                   "<b>SSID: </b>" + WiFi.SSID() + "<br>" +
-                  "<br>Upnp Info: <a target=\"_blank\" href='/description.xml'>description.xml</a>" + "<br>" +
                   "</body></head></html>";
     request->send(200, "text/html", html);
   });
 
   asyncserver.on("/shot", HTTP_GET, [](AsyncWebServerRequest * request) {
-    request->send(200, "text/plain", "screen is taken\r\n" );
+    String html = (String) "<html><head><meta charset=\"utf-8\"><body><h3>Screenshot</h3>" + 
+                           "<b>Screenshot: </b> Captured <br><br>" +
+                           "<a href=screen.data download>Result</a> Retrieve the image in RGB565 format (open it with GIMP)<br>" + 
+                           "</body></head></html>";
+    log_i("screenshot requested");
     screenshot_take();
     screenshot_save();
+    request->send(200, "text/html", html);
   });
 
   asyncserver.addHandler(new SPIFFSEditor(SPIFFS));
@@ -306,76 +313,27 @@ void asyncwebserver_start(void){
     }
   });
 
-  asyncserver.on("/reset", HTTP_GET, []( AsyncWebServerRequest * request ) {
-    request->send(200, "text/plain", "Reset\r\n" );
-    delay(3000);
-    ESP.restart();    
-  });
+//  asyncserver.on("/reset", HTTP_GET, []( AsyncWebServerRequest * request ) {
+//    request->send(200, "text/plain", "Reset\r\n" );
+//    delay(3000);
+//    ESP.restart();    
+//  });
 
-  asyncserver.on("/update", HTTP_GET, [](AsyncWebServerRequest * request) {
-    request->send(200, "text/html", serverIndex);
-  });
+//  asyncserver.on("/update", HTTP_GET, [](AsyncWebServerRequest * request) {
+//    request->send(200, "text/html", serverIndex);
+//  });
 
-  asyncserver.on(
-    "/update", HTTP_POST,
-    [](AsyncWebServerRequest *request) {},
-    [](AsyncWebServerRequest *request, const String &filename, size_t index, uint8_t *data, size_t len, bool final) { handleUpdate(request, filename, index, data, len, final); }
-  );
-
-  asyncserver.on("/description.xml", HTTP_GET, [](AsyncWebServerRequest *request) {
-    byte mac[6];
-    WiFi.macAddress(mac);
-    char tmp[6 + 1];
-    snprintf(tmp, sizeof(tmp), "%02X%02X%02X", mac[3], mac[4], mac[5]);
-    String MacStrPart = String(tmp);
-
-    String xmltext = String("<?xml version=\"1.0\"?>\n") +
-            "<root xmlns=\"urn:schemas-upnp-org:device-1-0\">\n"
-            "<specVersion>\n"
-            "\t<major>1</major>\n"
-            "\t<minor>0</minor>\n"
-            "</specVersion>\n"
-            "<URLBase>http://" + WiFi.localIP().toString() + "/</URLBase>\n" 
-            "<device>\n"
-            "\t<deviceType>upnp:rootdevice</deviceType>\n"
-
-            /*this is the icon name in Windows*/
-            /*"\t<friendlyName>" + WiFi.getHostname() + "</friendlyName>\n"*/ 
-            "\t<friendlyName>" + DEV_NAME + " " + MacStrPart + "</friendlyName>\n" /*because the hostename is 'Espressif' */
-
-            "\t<presentationURL>/</presentationURL>\n"
-            "\t<manufacturer>" + "Dirk Broßwick (sharandac)" + "</manufacturer>\n"
-            "\t<manufacturerURL>https://github.com/sharandac/My-TTGO-Watch</manufacturerURL>\n"
-            "\t<modelName>" +  DEV_INFO + "</modelName>\n"
-
-            "\t<modelNumber>" + WiFi.getHostname() + "</modelNumber>\n"
-            "\t<modelURL>" +
-            "/" + "</modelURL>\n"
-
-            "\t<serialNumber>Build: " + __FIRMWARE__ + "</serialNumber>\n"
-            //The last six bytes of the UUID are the hardware address of the first Ethernet adapter in the system the UUID was generated on.
-            "\t<UDN>uuid:38323636-4558-4DDA-9188-CDA0E6" + MacStrPart + "</UDN>\n"
-            "</device>\n"
-            "</root>\r\n"
-            "\r\n";
-
-    request->send(200, "text/xml", xmltext);
-  });
-
-  //Upnp / SSDP presentation - Multicast  - link to description.xml
-  SSDP.setSchemaURL("description.xml");
-  SSDP.setHTTPPort( UPNPPORT );
-  SSDP.setURL("/");
-  SSDP.setDeviceType("upnp:rootdevice");
-  SSDP.begin();
+//  asyncserver.on(
+//    "/update", HTTP_POST,
+//    [](AsyncWebServerRequest *request) {},
+//    [](AsyncWebServerRequest *request, const String &filename, size_t index, uint8_t *data, size_t len, bool final) { handleUpdate(request, filename, index, data, len, final); }
+//  );
 
   asyncserver.begin();
-
-  log_i("enable webserver and ssdp");
+  log_i("enable webserver"); 
 }
 
 void asyncwebserver_end(void) {
-  SSDP.end();
   asyncserver.end();
-  log_i("disable webserver and ssdp");
+  log_i("disable webserver");
 }

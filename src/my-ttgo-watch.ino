@@ -42,14 +42,17 @@
 #include "hardware/framebuffer.h"
 #include "hardware/callback.h"
 
-#include "app/weather/weather.h"
-#include "app/stopwatch/stopwatch_app.h"
-#include "app/alarm_clock/alarm_clock.h"
-#include "app/crypto_ticker/crypto_ticker.h"
-#include "app/example_app/example_app.h"
-#include "app/osmand/osmand_app.h"
+#include "app/bluebox/bluebox_app.h"
+#include "app/netscan/netscan_app.h"
+#include "app/ping/ping_app.h"
+#include "app/subnet/subnet_app.h"
+#include "app/iplookup/iplookup_app.h"
 #include "app/IRController/IRController.h"
 #include "app/powermeter/powermeter_app.h"
+#include "app/stopwatch/stopwatch_app.h"
+#include "app/alarm_clock/alarm_clock.h"
+
+#include "webserver/webserver.h"
 
 TTGOClass *ttgo = TTGOClass::getWatch();
 
@@ -97,14 +100,16 @@ void setup()
     /*
      * add apps and widgets here!!!
      */
-    weather_app_setup();
-    stopwatch_app_setup();
-    alarm_clock_setup();
-    crypto_ticker_setup();
-    example_app_setup();
-    osmand_app_setup();
+    bluebox_app_setup();
+    netscan_app_setup();
+    subnet_app_setup();
+    ping_app_setup();
+    iplookup_app_setup();
     IRController_setup();
     powermeter_app_setup();
+    stopwatch_app_setup();
+    alarm_clock_setup();
+
     /*
      *
      */

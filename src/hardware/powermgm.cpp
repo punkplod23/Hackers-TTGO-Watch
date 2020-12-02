@@ -40,6 +40,7 @@
 #include "sound.h"
 
 #include "gui/mainbar/mainbar.h"
+#include <app/alarm_clock/alarm_in_progress.h>
 
 EventGroupHandle_t powermgm_status = NULL;
 portMUX_TYPE DRAM_ATTR powermgmMux = portMUX_INITIALIZER_UNLOCKED;
@@ -101,7 +102,7 @@ void powermgm_loop( void ) {
             setCpuFrequencyMhz(240);
             powermgm_set_event( POWERMGM_WAKEUP );
             powermgm_send_event_cb( POWERMGM_WAKEUP );
-            motor_vibe(3);
+            //motor_vibe(3);
         }
 
         log_i("Free heap: %d", ESP.getFreeHeap());
@@ -121,7 +122,7 @@ void powermgm_loop( void ) {
         adc_power_off();
 
         if ( powermgm_send_event_cb( POWERMGM_STANDBY ) ) {
-            if (!noBuzz) motor_vibe(3);  //Only buzz if a non silent wake was performed
+            //if (!noBuzz) motor_vibe(3);  //Only buzz if a non silent wake was performed
             log_i("Free heap: %d", ESP.getFreeHeap());
             log_i("Free PSRAM heap: %d", ESP.getFreePsram());
             log_i("uptime: %d", millis() / 1000 );

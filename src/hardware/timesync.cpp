@@ -26,7 +26,6 @@
 #include "wifictl.h"
 #include "timesync.h"
 #include "powermgm.h"
-#include "blectl.h"
 #include "json_psram_allocator.h"
 #include "callback.h"
 
@@ -39,7 +38,6 @@ callback_t *timesync_callback = NULL;
 void timesync_Task( void * pvParameters );
 bool timesync_powermgm_event_cb( EventBits_t event, void *arg );
 bool timesync_wifictl_event_cb( EventBits_t event, void *arg );
-bool timesync_blectl_event_cb( EventBits_t event, void *arg );
 bool timesync_send_event_cb( EventBits_t event, void *arg );
 
 void timesync_setup( void ) {
@@ -48,7 +46,6 @@ void timesync_setup( void ) {
     time_event_handle = xEventGroupCreate();
 
     wifictl_register_cb( WIFICTL_CONNECT, timesync_wifictl_event_cb, "timesync" );
-    blectl_register_cb( BLECTL_MSG, timesync_blectl_event_cb, "time sync ble" );
     powermgm_register_cb( POWERMGM_SILENCE_WAKEUP | POWERMGM_STANDBY | POWERMGM_WAKEUP, timesync_powermgm_event_cb, "timesync" );
 
     timesyncToSystem();
@@ -112,32 +109,6 @@ bool timesync_wifictl_event_cb( EventBits_t event, void *arg ) {
             }
         }
         break;
-    }
-    return( true );
-}
-
-bool timesync_blectl_event_cb( EventBits_t event, void *arg ) {
-    char *settime_str = NULL;
-    time_t now;
-    struct timeval new_now;
-
-    switch( event ) {
-        case BLECTL_MSG:
-            settime_str = strstr( (const char*)arg, "setTime(" );
-            if ( settime_str ) {
-                settime_str = settime_str + 8;
-                time( &now );
-                log_i("old time: %d", now );
-                new_now.tv_sec = atol( settime_str );
-                new_now.tv_usec = 0;
-                if ( settimeofday(&new_now, NULL) == 0 ) {
-                    log_i("new time: %d", new_now.tv_sec );
-                }
-                else {
-                    log_e("set new time failed, errno = %d", errno );
-                }
-                xEventGroupSetBits( time_event_handle, TIME_SYNC_OK );
-            }
     }
     return( true );
 }

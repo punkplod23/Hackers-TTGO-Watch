@@ -32,12 +32,7 @@
 #include "alloc.h"
 
 #include "gui/statusbar.h"
-#ifdef ENABLE_WEBSERVER
 #include "webserver/webserver.h"
-#endif
-#ifdef ENABLE_FTPSERVER
-#include "ftpserver/ftpserver.h"
-#endif
 
 bool wifi_init = false;
 EventGroupHandle_t wifictl_status = NULL;
@@ -134,16 +129,9 @@ void wifictl_setup( void ) {
         wifictl_clear_event( WIFICTL_OFF_REQUEST | WIFICTL_ON_REQUEST | WIFICTL_SCAN | WIFICTL_WPS_REQUEST  );
         wifictl_send_event_cb( WIFICTL_CONNECT, (void *)WiFi.SSID().c_str() );
         wifictl_send_event_cb( WIFICTL_CONNECT_IP, (void *)WiFi.localIP().toString().c_str() );
-        #ifdef ENABLE_WEBSERVER
         if ( wifictl_config.webserver ) {
           asyncwebserver_start();
         }
-        #endif
-        #ifdef ENABLE_FTPSERVER
-        if ( wifictl_config.ftpserver ) {
-          ftpserver_start( wifictl_config.ftpuser , wifictl_config.ftppass );
-        }
-        # endif
     }, WiFiEvent_t::SYSTEM_EVENT_STA_GOT_IP );
 
     WiFi.onEvent([](WiFiEvent_t event, WiFiEventInfo_t info) {
@@ -159,9 +147,7 @@ void wifictl_setup( void ) {
     }, WiFiEvent_t::SYSTEM_EVENT_WIFI_READY );
 
     WiFi.onEvent([](WiFiEvent_t event, WiFiEventInfo_t info) {
-        #ifdef ENABLE_WEBSERVER
         asyncwebserver_end();
-        #endif
         wifictl_clear_event( WIFICTL_ACTIVE | WIFICTL_CONNECT | WIFICTL_OFF_REQUEST | WIFICTL_ON_REQUEST | WIFICTL_SCAN | WIFICTL_WPS_REQUEST );
         wifictl_send_event_cb( WIFICTL_OFF, (void *)"" );
     }, WiFiEvent_t::SYSTEM_EVENT_STA_STOP );
@@ -227,14 +213,7 @@ void wifictl_save_config( void ) {
         SpiRamJsonDocument doc( 10000 );
 
         doc["autoon"] = wifictl_config.autoon;
-        #ifdef ENABLE_WEBSERVER
         doc["webserver"] = wifictl_config.webserver;
-        #endif
-        #ifdef ENABLE_FTPSERVER
-        doc["ftpserver"] = wifictl_config.ftpserver;
-        doc["ftpuser"] = wifictl_config.ftpuser;
-        doc["ftppass"] = wifictl_config.ftppass;
-        #endif
         doc["enable_on_standby"] = wifictl_config.enable_on_standby;
         for ( int i = 0 ; i < NETWORKLIST_ENTRYS ; i++ ) {
             doc["networklist"][ i ]["ssid"] = wifictl_networklist[ i ].ssid;
@@ -264,22 +243,8 @@ void wifictl_load_config( void ) {
         }
         else {
             wifictl_config.autoon = doc["autoon"] | true;
-            #ifdef ENABLE_WEBSERVER
             wifictl_config.webserver = doc["webserver"] | false;
-            #endif
-            #ifdef ENABLE_FTPSERVER
-            wifictl_config.ftpserver = doc["ftpserver"] | false;
             
-            if ( doc["ftpuser"] )
-              strlcpy( wifictl_config.ftpuser, doc["ftpuser"], sizeof( wifictl_config.ftpuser ) );
-            else
-              strlcpy( wifictl_config.ftpuser, FTPSERVER_USER, sizeof( wifictl_config.ftpuser ) );
-            if ( doc["ftppass"] )
-              strlcpy( wifictl_config.ftppass, doc["ftppass"], sizeof( wifictl_config.ftppass ) );
-            else
-              strlcpy( wifictl_config.ftppass, FTPSERVER_PASSWORD, sizeof( wifictl_config.ftppass ) );
-            #endif
-
             wifictl_config.enable_on_standby = doc["enable_on_standby"] | false;
             for ( int i = 0 ; i < NETWORKLIST_ENTRYS ; i++ ) {
                 if ( doc["networklist"][ i ]["ssid"] && doc["networklist"][ i ]["psk"] ) {
@@ -312,7 +277,6 @@ void wifictl_set_enable_on_standby( bool enable ) {
   wifictl_save_config();
 }
 
-#ifdef ENABLE_WEBSERVER
 bool wifictl_get_webserver( void ) {
   return( wifictl_config.webserver );
 }
@@ -321,18 +285,6 @@ void wifictl_set_webserver( bool webserver ) {
   wifictl_config.webserver = webserver;
   wifictl_save_config();
 }
-#endif
-
-#ifdef ENABLE_WEBSERVER
-bool wifictl_get_ftpserver( void ) {
-return( wifictl_config.ftpserver );
-}
-
-void wifictl_set_ftpserver( bool ftpserver ) {
-  wifictl_config.ftpserver = ftpserver;
-  wifictl_save_config();
-}
-#endif
 
 void wifictl_set_event( EventBits_t bits ) {
     portENTER_CRITICAL(&wifictlMux);
