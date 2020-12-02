@@ -33,24 +33,24 @@ or simple press "build and upload" in platformIO.
 * I have found it best for stability to use just the wifi and keep the bluetooth disabled for now 
 * I set a plain black background via the settings which seems to make the screenshot process more stable
 
-# Apps
+# Apps    
 
-## New:-
-*Bluebox*     - bluebox for the phreaks (add the included mp3 files to SPIFFS using the webserver upload tool) 
-*Netscan*     - Connect based port scanner (may be slow with down hosts but select() seems flaky on this platform(?)) 
-*Subnet*      - Simple subnet calculator to see how many hosts / valid hosts
-*Ping*        - Ping some IP address 
-*IP Lookup*   - Lookup who owns an IP via the ip-info API
+## New:-    
+*Bluebox*     - bluebox for the phreaks (add the included mp3 files to SPIFFS using the webserver upload tool)     
+*Netscan*     - Connect based port scanner (may be slow with down hosts but select() seems flaky on this platform(?))    
+*Subnet*      - Simple subnet calculator to see how many hosts / valid hosts    
+*Ping*        - Ping some IP address     
+*IP Lookup*   - Lookup who owns an IP via the ip-info API    
 
 ## Existing:-
-*IR Remote*   - IR remote 
-*Power Meter* - Information from an electricity meter(?)
-*Stopwatch*   - Stopwatch
-*Alarm*       - Alarm clock
+*IR Remote*   - IR remote     
+*Power Meter* - Information from an electricity meter(?)    
+*Stopwatch*   - Stopwatch     
+*Alarm*       - Alarm clock     
 
-# Call for ideas
+# Call for ideas    
 
-If you have something you would like to see built for the watch (especially network/security tools) then please let me know using github issues. I will also make a tutorial about how to program your own apps shortly. 
+If you have something you would like to see built for the watch (especially network/security tools) then please let me know using github issues. I will also make a tutorial about how to program your own apps shortly.     
  
 # For the programmers
 
