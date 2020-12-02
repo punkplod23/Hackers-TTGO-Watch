@@ -5,9 +5,9 @@
 ![watch](images/iplookup.png?raw=true "watch")
 ![watch](images/portscan.png?raw=true "watch")
 
-An alternative firmware for the TTGO smartwatch based on ESP32 from LilyGo. Currently under active development (check back often for new functionality) 
+An alternative software distribution for the TTGO smartwatch based on ESP32 from LilyGo. Currently under active development (check back often for new functionality) 
 
-Forked from the excellent firmware by sharandac https://github.com/sharandac/My-TTGO-Watch with some small fixes and different apps. 
+Forked from the excellent software by sharandac https://github.com/sharandac/My-TTGO-Watch with some small fixes and different apps. 
 
 * Changed main font (e.g for the timeface) to FreeMono (TODO: Fix naming. Still appears as 'ubuntu')
 * Removed crypto ticker
