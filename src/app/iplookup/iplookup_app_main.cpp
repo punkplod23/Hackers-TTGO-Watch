@@ -56,8 +56,8 @@ void fetch_ip_info( void ) {
     char url[128]="";
     char status[16];
     char cnt[64];
-    char reg[64];
-    char cit[64];
+    char reg[72];
+    char cit[72];
     char asn[128];
     int httpcode = -1;
     lv_obj_t * label;
