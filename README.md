@@ -135,5 +135,6 @@ Thanks also to the following projects:
 [ESP8266Audio](https://github.com/earlephilhower/ESP8266Audio)<br>
 [pubsubclient](https://github.com/knolleary/pubsubclient)<br>
 [ESP32Ping](https://github.com/marian-craciunescu/ESP32Ping)<br>
+[LibSSH-ESP32](https://github.com/ewpa/LibSSH-ESP32)<br>
 
 Every Contribution to this repository is highly welcome! Don't fear to create pull requests which enhance or fix the project, you are going to help everybody.

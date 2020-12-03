@@ -53,6 +53,7 @@
 #include "app/alarm_clock/alarm_clock.h"
 
 #include "webserver/webserver.h"
+#include "sshscp/sshscp.h"
 
 TTGOClass *ttgo = TTGOClass::getWatch();
 
