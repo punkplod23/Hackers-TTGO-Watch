@@ -29,7 +29,7 @@
 
     #define DISPLAY_JSON_CONFIG_FILE    "/display.json" /** @brief defines json config file name */
     
-    #define DISPLAY_MIN_TIMEOUT         15              /** @brief min display timeout */
+    #define DISPLAY_MIN_TIMEOUT         20              /** @brief min display timeout */
     #define DISPLAY_MAX_TIMEOUT         300             /** @brief max display timeout */
     #define DISPLAY_MIN_BRIGHTNESS      8               /** @brief min display brightness */
     #define DISPLAY_MAX_BRIGHTNESS      255             /** @brief max display brightness */
