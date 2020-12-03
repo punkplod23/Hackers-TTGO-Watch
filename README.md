@@ -106,9 +106,11 @@ I use the following import settings for GIMP:
 * width 240
 * height 240    
 
-# Contributors
+# Contributors 
 
-Special thanks to the following people for their help:
+Massive thanks to [sharadac](https://github.com/sharandac/) for the TTGO Watch project.<br> 
+
+Where they give special thanks to the following people for their help:
 
 [5tormChild](https://github.com/5tormChild)<br>
 [bwagstaff](https://github.com/bwagstaff)<br>
@@ -122,16 +124,16 @@ Special thanks to the following people for their help:
 [paulstueber](https://github.com/paulstueber)<br>
 [ssspeq](https://github.com/ssspeq)<br>
 
-and the following projects:
+Thanks also to the following projects:
 
 [ArduinoJson](https://github.com/bblanchon/ArduinoJson)<br>
 [AsyncTCP](https://github.com/me-no-dev/AsyncTCP)<br>
-[ESP32SSDP](https://github.com/luc-github/ESP32SSDP)<br>
 [ESPAsyncWebServer](https://github.com/me-no-dev/ESPAsyncWebServer)<br>
 [LVGL](https://github.com/lvgl)<br>
 [TFT_eSPI](https://github.com/Bodmer/TFT_eSPI)<br>
 [TTGO_TWatch_Library](https://github.com/Xinyuan-LilyGO/TTGO_TWatch_Library)<br>
 [ESP8266Audio](https://github.com/earlephilhower/ESP8266Audio)<br>
 [pubsubclient](https://github.com/knolleary/pubsubclient)<br>
+[ESP32Ping](https://github.com/marian-craciunescu/ESP32Ping)<br>
 
 Every Contribution to this repository is highly welcome! Don't fear to create pull requests which enhance or fix the project, you are going to help everybody.
