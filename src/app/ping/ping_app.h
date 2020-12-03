@@ -18,8 +18,6 @@
 
     #include <TTGO.h>
 
-//    #define PING_WIDGET    // uncomment if an widget need
-
     void ping_app_setup( void );
     uint32_t ping_app_get_app_setup_tile_num( void );
     uint32_t ping_app_get_app_main_tile_num( void );

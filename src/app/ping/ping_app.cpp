@@ -27,48 +27,26 @@
 #include "gui/mainbar/mainbar.h"
 #include "gui/statusbar.h"
 #include "gui/app.h"
-#include "gui/widget.h"
 
 uint32_t ping_app_main_tile_num;
 
 // app icon
 icon_t *ping_app = NULL;
 
-// widget icon
-icon_t *ping_widget = NULL;
-
 // declare you images or fonts you need
 LV_IMG_DECLARE(ping_app_64px);
 LV_IMG_DECLARE(info_1_16px);
 
-// declare callback functions for the app and widget icon to enter the app
 static void enter_ping_app_event_cb( lv_obj_t * obj, lv_event_t event );
-static void enter_ping_widget_event_cb( lv_obj_t * obj, lv_event_t event );
 
 /*
  * setup routine for ping app
  */
 void ping_app_setup( void ) {
-    // register 2 vertical tiles and get the first tile number and save it for later use
     ping_app_main_tile_num = mainbar_add_app_tile( 1, 1, "ping app" );
 
-    // register app icon on the app tile
-    // set your own icon and register her callback to activate by an click
-    // remember, an app icon must have an size of 64x64 pixel with an alpha channel
-    // use https://lvgl.io/tools/imageconverter to convert your images and set "true color with alpha" to get fancy images
-    // the resulting c-file can put in /app/pings/images/ and declare it like LV_IMG_DECLARE( your_icon );
     ping_app = app_register( "ping", &ping_app_64px, enter_ping_app_event_cb );
     app_set_indicator( ping_app, ICON_INDICATOR_OK );
-
-#ifdef PING_WIDGET
-    // register widget icon on the main tile
-    // set your own icon and register her callback to activate by an click
-    // remember, an widget icon must have an max size of 64x64 pixel
-    // use https://lvgl.io/tools/imageconverter to convert your images and set "true color with alpha" to get fancy images
-    // the resulting c-file can put in /app/pings/images/ and declare it like LV_IMG_DECLARE( your_icon );
-    ping_widget = widget_register( "myapp", &ping_app_64px, enter_ping_widget_event_cb );
-    widget_set_indicator( ping_widget, ICON_INDICATOR_UPDATE );
-#endif // PING_WIDGET
 
     // init main tile, see ping_app_main.cpp 
     ping_app_main_setup( ping_app_main_tile_num );
@@ -93,14 +71,3 @@ static void enter_ping_app_event_cb( lv_obj_t * obj, lv_event_t event ) {
     }    
 }
 
-/*
- *
- */
-static void enter_ping_widget_event_cb( lv_obj_t * obj, lv_event_t event ) {
-    switch( event ) {
-        case( LV_EVENT_CLICKED ):       statusbar_hide( true );
-                                        widget_hide_indicator( ping_widget );
-                                        mainbar_jump_to_tilenumber( ping_app_main_tile_num, LV_ANIM_OFF );
-                                        break;
-    }    
-}

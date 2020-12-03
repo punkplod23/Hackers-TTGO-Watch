@@ -18,10 +18,7 @@
 
     #include <TTGO.h>
 
-//    #define SUBNET_WIDGET    // uncomment if an widget need
-
     void subnet_app_setup( void );
-    uint32_t subnet_app_get_app_setup_tile_num( void );
     uint32_t subnet_app_get_app_main_tile_num( void );
 
 #endif // _SUBNET_APP_H

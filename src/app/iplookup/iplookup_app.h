@@ -18,10 +18,7 @@
 
     #include <TTGO.h>
 
-//    #define IPLOOKUP_WIDGET    // uncomment if an widget need
-
     void iplookup_app_setup( void );
-    uint32_t iplookup_app_get_app_setup_tile_num( void );
     uint32_t iplookup_app_get_app_main_tile_num( void );
 
 #endif // _IPLOOKUP_APP_H
