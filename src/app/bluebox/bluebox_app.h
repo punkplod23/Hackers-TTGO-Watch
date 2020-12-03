@@ -19,6 +19,5 @@
     #include <TTGO.h>
 
     void bluebox_app_setup( void );
-    uint32_t bluebox_app_get_app_setup_tile_num( void );
     uint32_t bluebox_app_get_app_main_tile_num( void );
 #endif // _BLUEBOX_APP_H
