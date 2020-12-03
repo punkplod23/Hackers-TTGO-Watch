@@ -1,10 +1,11 @@
 # My-TTGO-Watch
 
-![watch](images/main.png?raw=true "watch")
-![watch](images/watch.png?raw=true "watch")
-![watch](images/bluebox.png?raw=true "watch")
-![watch](images/iplookup.png?raw=true "watch")
-![watch](images/portscan.png?raw=true "watch")
+![time](images/main.png?raw=true "time")
+![apps](images/watch.png?raw=true "apps")
+![bluebox](images/bluebox.png?raw=true "bluebox")
+![iplookup](images/iplookup.png?raw=true "iplookup")
+![ping](images/ping.png?raw=true "ping")
+![portscan](images/portscan.png?raw=true "portscan")
 
 An alternative software distribution for the TTGO smartwatch based on ESP32 from LilyGo. Currently under active development (check back often for new functionality) 
 
