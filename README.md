@@ -44,7 +44,7 @@ or simple press "build and upload" in platformIO.
 # Apps    
 
 ## New:-    
-*Bluebox*     - bluebox for the phreaks (add the included mp3 files to SPIFFS using the webserver upload tool)     
+*Bluebox*     - bluebox for the phreaks (add the included mp3 files to SPIFFS using `pio run -t uploadfs` the first time)     
 *Netscan*     - Simple connect() based port scanner (slow with unreachable/blocked hosts - is there a better way working for ESP32?)    
 *Subnet*      - Simple subnet calculator to see how many hosts / valid hosts    
 *Ping*        - Ping some IP address     
