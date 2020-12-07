@@ -78,7 +78,7 @@ void fetch_ip_info( void ) {
         return;
     }
 
-    SpiRamJsonDocument doc( 1000 );
+    SpiRamJsonDocument doc( 1024 );
 
     DeserializationError error = deserializeJson( doc, today_client.getStream() );
     if (error) {

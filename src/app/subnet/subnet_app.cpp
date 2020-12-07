@@ -48,9 +48,6 @@ void subnet_app_setup( void ) {
     subnet_app_main_tile_num = mainbar_add_app_tile( 1, 1, "subnet app" );
 
     subnet_app = app_register( "subnet", &subnet_app_64px, enter_subnet_app_event_cb );
-    app_set_indicator( subnet_app, ICON_INDICATOR_OK );
-
-    // init main tile, see subnet_app_main.cpp 
     subnet_app_main_setup( subnet_app_main_tile_num );
 }
 

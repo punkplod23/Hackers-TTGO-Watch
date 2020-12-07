@@ -77,7 +77,7 @@ void ping_app_main_scanner_try( void )
     lv_obj_t * label;
     
     label = lv_label_create(ping_result_cont, NULL);
-    lv_label_set_text(label, "Send 5 pkts");
+    lv_label_set_text_static(label, "Send 5 pkts");
     bool rc = Ping.ping(str2IP(lv_textarea_get_text(ping_ip_textfield)));
     float avg_time_ms = Ping.averageTime();
     if(avg_time_ms != 0)

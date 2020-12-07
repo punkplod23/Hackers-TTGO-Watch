@@ -1,7 +1,5 @@
-/****************************************************************************
- *   linuxthor 2020 
- *   ttgo watch network scanner
- ****************************************************************************/
+// ESP32 watch simple SSH client app by linuxthor using 
+// library https://github.com/ewpa/LibSSH-ESP32 
  
 /*
  *  This program is free software; you can redistribute it and/or modify
@@ -21,48 +19,49 @@
 #include "config.h"
 #include <TTGO.h>
 
-#include "netscan_app.h"
-#include "netscan_app_main.h"
+#include "sshclient_app.h"
+#include "sshclient_app_main.h"
 
 #include "gui/mainbar/mainbar.h"
 #include "gui/statusbar.h"
 #include "gui/app.h"
+#include "gui/widget.h"
 
-uint32_t netscan_app_main_tile_num;
+uint32_t sshclient_app_main_tile_num;
 
 // app icon
-icon_t *netscan_app = NULL;
+icon_t *sshclient_app = NULL;
 
 // declare you images or fonts you need
-LV_IMG_DECLARE(netscan_app_64px);
+LV_IMG_DECLARE(sshclient_app_64px);
 LV_IMG_DECLARE(info_1_16px);
 
-static void enter_netscan_app_event_cb( lv_obj_t * obj, lv_event_t event );
+static void enter_sshclient_app_event_cb( lv_obj_t * obj, lv_event_t event );
 
 /*
- * setup routine for netscan app
+ * setup routine for sshclient app
  */
-void netscan_app_setup( void ) {
-    netscan_app_main_tile_num = mainbar_add_app_tile( 1, 1, "netscan app" );
-    netscan_app = app_register( "netscan", &netscan_app_64px, enter_netscan_app_event_cb );
-    netscan_app_main_setup( netscan_app_main_tile_num );
+void sshclient_app_setup( void ) {
+    sshclient_app_main_tile_num = mainbar_add_app_tile( 1, 1, "SSH" );
+    sshclient_app = app_register( "SSH", &sshclient_app_64px, enter_sshclient_app_event_cb );
+    sshclient_app_main_setup( sshclient_app_main_tile_num );
 }
 
 /*
  *
  */
-uint32_t netscan_app_get_app_main_tile_num( void ) {
-    return( netscan_app_main_tile_num );
+uint32_t sshclient_app_get_app_main_tile_num( void ) {
+    return( sshclient_app_main_tile_num );
 }
 
 /*
  *
  */
-static void enter_netscan_app_event_cb( lv_obj_t * obj, lv_event_t event ) {
+static void enter_sshclient_app_event_cb( lv_obj_t * obj, lv_event_t event ) {
     switch( event ) {
         case( LV_EVENT_CLICKED ):       statusbar_hide( true );
-                                        app_hide_indicator( netscan_app );
-                                        mainbar_jump_to_tilenumber( netscan_app_main_tile_num, LV_ANIM_OFF );
+                                        app_hide_indicator( sshclient_app );
+                                        mainbar_jump_to_tilenumber( sshclient_app_main_tile_num, LV_ANIM_OFF );
                                         break;
     }    
 }

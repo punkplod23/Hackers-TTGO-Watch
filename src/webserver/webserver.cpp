@@ -313,22 +313,6 @@ void asyncwebserver_start(void){
     }
   });
 
-//  asyncserver.on("/reset", HTTP_GET, []( AsyncWebServerRequest * request ) {
-//    request->send(200, "text/plain", "Reset\r\n" );
-//    delay(3000);
-//    ESP.restart();    
-//  });
-
-//  asyncserver.on("/update", HTTP_GET, [](AsyncWebServerRequest * request) {
-//    request->send(200, "text/html", serverIndex);
-//  });
-
-//  asyncserver.on(
-//    "/update", HTTP_POST,
-//    [](AsyncWebServerRequest *request) {},
-//    [](AsyncWebServerRequest *request, const String &filename, size_t index, uint8_t *data, size_t len, bool final) { handleUpdate(request, filename, index, data, len, final); }
-//  );
-
   asyncserver.begin();
   log_i("enable webserver"); 
 }

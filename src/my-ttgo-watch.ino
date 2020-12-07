@@ -45,6 +45,7 @@
 #include "app/bluebox/bluebox_app.h"
 #include "app/netscan/netscan_app.h"
 #include "app/ping/ping_app.h"
+#include "app/sshclient/sshclient_app.h"
 #include "app/subnet/subnet_app.h"
 #include "app/iplookup/iplookup_app.h"
 #include "app/IRController/IRController.h"
@@ -105,6 +106,7 @@ void setup()
     subnet_app_setup();
     ping_app_setup();
     iplookup_app_setup();
+    sshclient_app_setup();
     IRController_setup();
     powermeter_app_setup();
     stopwatch_app_setup();

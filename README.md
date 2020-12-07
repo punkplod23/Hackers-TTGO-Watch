@@ -49,6 +49,7 @@ or simple press "build and upload" in platformIO.
 *Subnet*      - Simple subnet calculator to see how many hosts / valid hosts    
 *Ping*        - Ping some IP address     
 *IP Lookup*   - Lookup who owns an IP via the ip-info API    
+*SSH client*  - Basic SSH. Password only for now (no keys - TODO) / known hosts handling via SPIFFS still needs to be added.     
 
 ## Existing:-
 *IR Remote*   - IR remote     
@@ -135,5 +136,6 @@ Thanks also to the following projects:
 [ESP8266Audio](https://github.com/earlephilhower/ESP8266Audio)<br>
 [pubsubclient](https://github.com/knolleary/pubsubclient)<br>
 [ESP32Ping](https://github.com/marian-craciunescu/ESP32Ping)<br>
+[LibSSH-ESP32](https://github.com/ewpa/LibSSH-ESP32)<br>
 
 Every Contribution to this repository is highly welcome! Don't fear to create pull requests which enhance or fix the project, you are going to help everybody.
