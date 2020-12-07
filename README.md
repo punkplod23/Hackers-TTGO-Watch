@@ -30,6 +30,12 @@ pio run -t upload
 
 or simple press "build and upload" in platformIO.
 
+The first time you may wish to add bluebox mp3 files with:
+
+```    
+pio run -t uploadfs     
+```    
+
 # known issues
 
 * the battery indicator is not accurate, rather a problem with the power management unit ( axp202 )
