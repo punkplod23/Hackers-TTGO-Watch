@@ -22,7 +22,6 @@ static void enter_bluebox_app_event_cb( lv_obj_t * obj, lv_event_t event );
 void bluebox_app_setup( void ) {
     bluebox_app_main_tile_num = mainbar_add_app_tile( 1, 1, "bluebox" );
     bluebox_app = app_register( "blue box", &bluebox_app_64px, enter_bluebox_app_event_cb );
-    app_set_indicator( bluebox_app, ICON_INDICATOR_OK );
     bluebox_app_main_setup( bluebox_app_main_tile_num );
 }
 

@@ -45,7 +45,6 @@ static void enter_iplookup_app_event_cb( lv_obj_t * obj, lv_event_t event );
 void iplookup_app_setup( void ) {
     iplookup_app_main_tile_num = mainbar_add_app_tile( 1, 1, "iplookup app" );
     iplookup_app = app_register( "IP lookup", &iplookup_app_64px, enter_iplookup_app_event_cb );
-    app_set_indicator( iplookup_app, ICON_INDICATOR_OK );
     iplookup_app_main_setup( iplookup_app_main_tile_num );
 }
 

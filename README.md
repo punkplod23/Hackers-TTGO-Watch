@@ -49,6 +49,7 @@ or simple press "build and upload" in platformIO.
 *Subnet*      - Simple subnet calculator to see how many hosts / valid hosts    
 *Ping*        - Ping some IP address     
 *IP Lookup*   - Lookup who owns an IP via the ip-info API    
+*SSH client*  - Basic SSH. Password only for now (no keys - TODO) / known hosts handling via SPIFFS still needs to be added.     
 
 ## Existing:-
 *IR Remote*   - IR remote     

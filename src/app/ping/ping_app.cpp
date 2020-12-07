@@ -46,7 +46,6 @@ void ping_app_setup( void ) {
     ping_app_main_tile_num = mainbar_add_app_tile( 1, 1, "ping app" );
 
     ping_app = app_register( "ping", &ping_app_64px, enter_ping_app_event_cb );
-    app_set_indicator( ping_app, ICON_INDICATOR_OK );
 
     // init main tile, see ping_app_main.cpp 
     ping_app_main_setup( ping_app_main_tile_num );
