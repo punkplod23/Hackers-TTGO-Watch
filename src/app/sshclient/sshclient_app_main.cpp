@@ -54,7 +54,7 @@ static void sshclient_command_textarea_event_cb( lv_obj_t * obj, lv_event_t even
 void sshclient_app_task( lv_task_t * task );
 void ssh_task(void * pvParameters);
 
-TaskHandle_t _ssh_Task;
+TaskHandle_t _ssh_Task = NULL;
 
 /*
  * knownhosts.c
@@ -236,7 +236,6 @@ int authenticate_console(ssh_session session)
 {
     int rc;
     int method;
-    char password[128] = {0};
     char *banner;
 
     banner = ssh_get_issue_banner(session);
@@ -288,17 +287,20 @@ ssh_session connect_ssh(const char *host, const char *user,int verbosity){
 
   session=ssh_new();
   if (session == NULL) {
+    log_i("couldn't create new session");
     return NULL;
   }
 
   if(user != NULL){
-    if (ssh_options_set(session, SSH_OPTIONS_USER, user) < 0) {
+    if (ssh_options_set(session, SSH_OPTIONS_USER, user) < 0) { 
+      log_i("couldn't set user in session");
       ssh_free(session);
       return NULL;
     }
   }
 
   if (ssh_options_set(session, SSH_OPTIONS_HOST, host) < 0) {
+    log_i("couldn't set host in session");
     ssh_free(session);
     return NULL;
   }
@@ -309,11 +311,12 @@ ssh_session connect_ssh(const char *host, const char *user,int verbosity){
     ssh_free(session);
     return NULL;
   }
-  if(verify_knownhost(session)<0){
-    ssh_disconnect(session);
-    ssh_free(session);
-    return NULL;
-  }
+  //if(verify_knownhost(session)<0){
+  //  log_i("knownhosts error in session");
+  //  ssh_disconnect(session);
+  //  ssh_free(session);
+  //  return NULL;
+  //}
   auth=authenticate_console(session);
   if(auth==SSH_AUTH_SUCCESS){
     return session;
@@ -347,7 +350,7 @@ int ex_main(){
         return 1;
     }
 
-    channel = ssh_channel_new(session);;
+    channel = ssh_channel_new(session);
     if (channel == NULL) {
         log_i("channel error");
         if(win != NULL)
@@ -360,7 +363,7 @@ int ex_main(){
 
     rc = ssh_channel_open_session(channel);
     if (rc < 0) {
-        log_i("session error");
+        log_i("channel open error");
         goto failed;
     }
 
@@ -532,7 +535,6 @@ void ssh_task(void * pvParameters)
 }
 
 static void enter_sshclient_app_connect_event_cb( lv_obj_t * obj, lv_event_t event ) {
-    TaskHandle_t xHandle = NULL;
     switch( event ) {
         case( LV_EVENT_CLICKED ):   win = lv_win_create(lv_scr_act(), NULL);
                                     lv_win_set_title(win, "Result");    
