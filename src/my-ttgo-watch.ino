@@ -49,7 +49,6 @@
 #include "app/subnet/subnet_app.h"
 #include "app/iplookup/iplookup_app.h"
 #include "app/IRController/IRController.h"
-#include "app/powermeter/powermeter_app.h"
 #include "app/stopwatch/stopwatch_app.h"
 #include "app/alarm_clock/alarm_clock.h"
 
@@ -108,7 +107,6 @@ void setup()
     iplookup_app_setup();
     sshclient_app_setup();
     IRController_setup();
-    powermeter_app_setup();
     stopwatch_app_setup();
     alarm_clock_setup();
 
@@ -118,8 +116,8 @@ void setup()
     if ( wifictl_get_autoon() && ( pmu_is_charging() || pmu_is_vbus_plug() || ( pmu_get_battery_voltage() > 3400) ) )
         wifictl_on();
 
-    // enable to store data in normal heap
-    heap_caps_malloc_extmem_enable( 16*1024 );
+    // enable to store data in normal heap below this size
+    heap_caps_malloc_extmem_enable( 32*1024 );
     blectl_setup();
     sound_setup();
 
