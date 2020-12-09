@@ -346,6 +346,7 @@ int ex_main(){
         log_i("connection error");
         if(win != NULL)
             lv_label_ins_text(txt, LV_LABEL_POS_LAST, "??? connect error");
+        ssh_finalize();
         return 1;
     }
 
@@ -356,6 +357,7 @@ int ex_main(){
             lv_label_ins_text(txt, LV_LABEL_POS_LAST, "??? channel error");
         ssh_disconnect(session);
         ssh_free(session);
+        ssh_finalize();
         return 1;
     }
 
@@ -396,7 +398,7 @@ int ex_main(){
     ssh_channel_free(channel);
     ssh_disconnect(session);
     ssh_free(session);
-
+    ssh_finalize();
     return 0;
 failed:
     log_i("handling failed cleanup");
@@ -406,7 +408,7 @@ failed:
     ssh_channel_free(channel);
     ssh_disconnect(session);
     ssh_free(session);
-
+    ssh_finalize();
     return 1;
 }
 
