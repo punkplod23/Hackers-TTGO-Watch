@@ -530,7 +530,7 @@ void ssh_task(void * pvParameters)
     log_i("starting ssh task..");
     libssh_begin();
     int ex_rc = ex_main();
-    vTaskDelay(200);
+    vTaskDelay(100);
     vTaskDelete( NULL );
 }
 
@@ -544,13 +544,12 @@ static void enter_sshclient_app_connect_event_cb( lv_obj_t * obj, lv_event_t eve
                                     lv_label_set_long_mode(txt, LV_LABEL_LONG_BREAK);
                                     lv_obj_set_width( txt, LV_HOR_RES - 20); 
                                     lv_label_set_text(txt, "");
-                                    xTaskGetIdleTaskHandle();
                                     xTaskCreate     (   ssh_task,                               /* Function to implement the task */
                                                         "SSH Task",                             /* Name of the task */
                                                         16000,                                  /* Stack size in words */
                                                         NULL,                                   /* Task input parameter */
                                                         1,                                      /* Priority of the task */
-                                                        NULL);      
+                                                        &_ssh_Task);      
                                     break;
     }
 }
