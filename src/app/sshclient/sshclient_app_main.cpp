@@ -346,7 +346,6 @@ int ex_main(){
         log_i("connection error");
         if(win != NULL)
             lv_label_ins_text(txt, LV_LABEL_POS_LAST, "??? connect error");
-        ssh_finalize();
         return 1;
     }
 
