@@ -91,7 +91,7 @@ clients must be made or how a client should react.
 int verify_knownhost(ssh_session session)
 {
     enum ssh_known_hosts_e state;
-    char buf[10];
+    //char buf[10];
     unsigned char *hash = NULL;
     size_t hlen;
     ssh_key srv_pubkey;
@@ -346,7 +346,6 @@ int ex_main(){
         log_i("connection error");
         if(win != NULL)
             lv_label_ins_text(txt, LV_LABEL_POS_LAST, "??? connect error");
-        ssh_finalize();
         return 1;
     }
 
@@ -357,7 +356,6 @@ int ex_main(){
             lv_label_ins_text(txt, LV_LABEL_POS_LAST, "??? channel error");
         ssh_disconnect(session);
         ssh_free(session);
-        ssh_finalize();
         return 1;
     }
 
@@ -398,7 +396,6 @@ int ex_main(){
     ssh_channel_free(channel);
     ssh_disconnect(session);
     ssh_free(session);
-    ssh_finalize();
 
     return 0;
 failed:
@@ -409,7 +406,6 @@ failed:
     ssh_channel_free(channel);
     ssh_disconnect(session);
     ssh_free(session);
-    ssh_finalize();
 
     return 1;
 }
@@ -535,12 +531,12 @@ static void sshclient_command_textarea_event_cb( lv_obj_t * obj, lv_event_t even
 
 void ssh_task(void * pvParameters)
 {
+    log_i("init libssh");
+    libssh_begin();
     for(;;)
     {
         log_i("starting ssh task..");
-        libssh_begin();
         int ex_rc = ex_main();
-        vTaskDelay(100);
         vTaskSuspend(NULL);
     }
 }
