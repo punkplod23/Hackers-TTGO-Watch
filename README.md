@@ -59,7 +59,6 @@ pio run -t uploadfs
 
 ## Existing:-
 *IR Remote*   - IR remote     
-*Power Meter* - Information from an electricity meter(?)    
 *Stopwatch*   - Stopwatch     
 *Alarm*       - Alarm clock     
 
