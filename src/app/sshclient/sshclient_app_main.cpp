@@ -501,6 +501,14 @@ void sshclient_app_main_setup( uint32_t tile_num ) {
     lv_obj_set_width( sshclient_command_textfield, LV_HOR_RES /4 * 2 );
     lv_obj_align( sshclient_command_textfield, sshclient_command_cont, LV_ALIGN_IN_RIGHT_MID, -5, 0 );
     lv_obj_set_event_cb( sshclient_command_textfield, sshclient_command_textarea_event_cb );
+
+    xTaskCreate     (   ssh_task,                               /* Function to implement the task */
+			"SSH Task",                             /* Name of the task */
+			16000,                                  /* Stack size in words */
+			NULL,                                   /* Task input parameter */
+			1,                                      /* Priority of the task */
+			&_ssh_Task);      
+    vTaskSuspend(_ssh_Task);
 }
 
 static void sshclient_ip_textarea_event_cb( lv_obj_t * obj, lv_event_t event ) {
@@ -527,11 +535,14 @@ static void sshclient_command_textarea_event_cb( lv_obj_t * obj, lv_event_t even
 
 void ssh_task(void * pvParameters)
 {
-    log_i("starting ssh task..");
-    libssh_begin();
-    int ex_rc = ex_main();
-    vTaskDelay(100);
-    vTaskDelete( NULL );
+    for(;;)
+    {
+        log_i("starting ssh task..");
+        libssh_begin();
+        int ex_rc = ex_main();
+        vTaskDelay(100);
+        vTaskSuspend(NULL);
+    }
 }
 
 static void enter_sshclient_app_connect_event_cb( lv_obj_t * obj, lv_event_t event ) {
@@ -544,12 +555,7 @@ static void enter_sshclient_app_connect_event_cb( lv_obj_t * obj, lv_event_t eve
                                     lv_label_set_long_mode(txt, LV_LABEL_LONG_BREAK);
                                     lv_obj_set_width( txt, LV_HOR_RES - 20); 
                                     lv_label_set_text(txt, "");
-                                    xTaskCreate     (   ssh_task,                               /* Function to implement the task */
-                                                        "SSH Task",                             /* Name of the task */
-                                                        16000,                                  /* Stack size in words */
-                                                        NULL,                                   /* Task input parameter */
-                                                        1,                                      /* Priority of the task */
-                                                        &_ssh_Task);      
+                                    vTaskResume(_ssh_Task);
                                     break;
     }
 }
