@@ -47,6 +47,7 @@ pio run -t uploadfs
 
 * I have found it best for battery and stability to use just the wifi and keep the bluetooth disabled for now     
 * I set a plain black background via the settings which seems to make the screenshot process more stable (still some reboots)    
+* Seems best to disable webserver when not in use    
 
 # Apps    
 
