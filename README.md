@@ -39,7 +39,7 @@ pio run -t uploadfs
 # known issues
 
 * the battery indicator is not accurate, rather a problem with the power management unit ( axp202 )
-~* SSH client sometimes (after a while) produces false 'connection error' and watch needs to be rebooted to restore app to working~ (hopefully resolved)          
+*~SSH client sometimes (after a while) produces false 'connection error' and watch needs to be rebooted to restore app to working~ (hopefully resolved)          
 * from time to time the esp32 crashes accidentally
 * and some other small things
 
