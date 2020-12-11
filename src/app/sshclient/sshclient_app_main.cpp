@@ -340,6 +340,8 @@ int ex_main(){
     memset(buffer, 0, sizeof(buffer)); 
 
     log_i("trying connection");
+    log_i("%s",lv_textarea_get_text(sshclient_ip_textfield));
+    log_i("%s",lv_textarea_get_text(sshclient_user_textfield));
     session = connect_ssh(lv_textarea_get_text(sshclient_ip_textfield), 
                                       lv_textarea_get_text(sshclient_user_textfield), 0);
     if (session == NULL) {
@@ -542,6 +544,10 @@ static void enter_sshclient_app_connect_event_cb( lv_obj_t * obj, lv_event_t eve
                                     lv_label_set_long_mode(txt, LV_LABEL_LONG_BREAK);
                                     lv_obj_set_width( txt, LV_HOR_RES - 20); 
                                     lv_label_set_text(txt, "");
+                                    lv_textarea_add_text(sshclient_ip_textfield,"");
+                                    lv_textarea_add_text(sshclient_user_textfield,"");
+                                    lv_textarea_add_text(sshclient_pass_textfield,"");
+                                    lv_textarea_add_text(sshclient_command_textfield,"");
                                     xTaskCreate     (   ssh_task,                               /* Function to implement the task */
                                                         "SSH Task",                             /* Name of the task */
                                                         16000,                                  /* Stack size in words */
