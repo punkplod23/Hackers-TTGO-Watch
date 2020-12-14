@@ -48,6 +48,7 @@
 #include "app/sshclient/sshclient_app.h"
 #include "app/subnet/subnet_app.h"
 #include "app/iplookup/iplookup_app.h"
+#include "app/wireless/wireless_app.h"
 #include "app/IRController/IRController.h"
 #include "app/stopwatch/stopwatch_app.h"
 #include "app/alarm_clock/alarm_clock.h"
@@ -98,7 +99,7 @@ void setup()
     gui_setup();
 
     /*
-     * add apps and widgets here!!!
+     * add apps and widgets here!!
      */
     bluebox_app_setup();
     netscan_app_setup();
@@ -106,6 +107,7 @@ void setup()
     ping_app_setup();
     iplookup_app_setup();
     sshclient_app_setup();
+    wireless_app_setup();
     IRController_setup();
     stopwatch_app_setup();
     alarm_clock_setup();

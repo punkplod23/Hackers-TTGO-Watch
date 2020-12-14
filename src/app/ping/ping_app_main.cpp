@@ -75,21 +75,30 @@ void ping_app_main_scanner_try( void )
 {
     static char outstr[15];
     lv_obj_t * label;
-    
-    label = lv_label_create(ping_result_cont, NULL);
-    lv_label_set_text_static(label, "Send 5 pkts");
-    bool rc = Ping.ping(str2IP(lv_textarea_get_text(ping_ip_textfield)));
+ 
+
+   if( ping_result_cont != NULL )
+    {
+       lv_obj_del( ping_result_cont ); 
+       ping_result_cont = NULL;           
+    }        
+    ping_result_cont = lv_cont_create( ping_app_main_tile, NULL);
+    lv_obj_set_auto_realign(ping_result_cont, true);                    
+    lv_obj_align_origo(ping_result_cont, NULL, LV_ALIGN_CENTER, 0, 0);  
+    lv_cont_set_fit(ping_result_cont, LV_FIT_TIGHT);
+    lv_cont_set_layout(ping_result_cont, LV_LAYOUT_COLUMN_MID);
+    Ping.ping(str2IP(lv_textarea_get_text(ping_ip_textfield)));
     float avg_time_ms = Ping.averageTime();
     if(avg_time_ms != 0)
     {
         dtostrf(avg_time_ms,7, 2, outstr);
         label = lv_label_create(ping_result_cont, NULL);
-        lv_label_set_text_fmt(label, "Avg: %s ms", outstr);
+        lv_label_set_text_fmt(label, "Send 5 pkts\nAvg: %s ms", outstr);
     }
     else
     {
         label = lv_label_create(ping_result_cont, NULL);
-        lv_label_set_text(label, "Avg: ??? ms");
+        lv_label_set_text(label, "Send ???\nAvg: ??? ms");
     }  
 }
 
@@ -142,17 +151,7 @@ static void ping_textarea_event_cb( lv_obj_t * obj, lv_event_t event ) {
 
 static void enter_ping_app_next_event_cb( lv_obj_t * obj, lv_event_t event ) {
     switch( event ) {
-        case( LV_EVENT_CLICKED ):      if( ping_result_cont != NULL )
-                                       {
-                                           lv_obj_del( ping_result_cont ); 
-                                           ping_result_cont = NULL;           
-                                       }        
-                                       ping_result_cont = lv_cont_create( ping_app_main_tile, NULL);
-                                       lv_obj_set_auto_realign(ping_result_cont, true);                    
-                                       lv_obj_align_origo(ping_result_cont, NULL, LV_ALIGN_CENTER, 0, 0);  
-                                       lv_cont_set_fit(ping_result_cont, LV_FIT_TIGHT);
-                                       lv_cont_set_layout(ping_result_cont, LV_LAYOUT_COLUMN_MID);
-                                       ping_app_main_scanner_try(); 
+        case( LV_EVENT_CLICKED ):      ping_app_main_scanner_try();
                                        break;
     }
 }
