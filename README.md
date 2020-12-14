@@ -58,6 +58,7 @@ pio run -t uploadfs
 *Ping*        - Ping some IP address     
 *IP Lookup*   - Lookup who owns an IP via the ip-info API    
 *SSH client*  - Password only for now (no keys - TODO) / (known hosts handling via SPIFFS - TODO)      
+*SSID Spam*   - Advertise some wireless networks named like Rick Astley lyrics     
 
 ## Existing:-
 *IR Remote*   - IR remote     
