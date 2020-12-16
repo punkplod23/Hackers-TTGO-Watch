@@ -40,6 +40,7 @@ pio run -t uploadfs
 
 * the battery indicator is not accurate, rather a problem with the power management unit ( axp202 )    
 ~SSH client sometimes (after a while) produces false 'connection error' and watch needs to be rebooted to restore app to working~ (hopefully resolved)          
+* after using the wifi monitor may need to turn wifi back on afterwards to use normal functions    
 * from time to time the esp32 crashes accidentally    
 * and some other small things    
 
@@ -59,6 +60,7 @@ pio run -t uploadfs
 *IP Lookup*   - Lookup who owns an IP via the ip-info API    
 *SSH client*  - Password only for now (no keys - TODO) / (known hosts handling via SPIFFS - TODO)      
 *SSID Spam*   - Advertise some wireless networks named like Rick Astley lyrics     
+*WiFi mon*    - See how busy a wireless channel is      
 
 ## Existing:-
 *IR Remote*   - IR remote     
