@@ -33,10 +33,8 @@
 #include "gui/statusbar.h"
 #include "gui/keyboard.h"
 
-lv_obj_t * wireless_result_cont = NULL;
 lv_obj_t *wireless_app_main_tile = NULL;
 lv_style_t wireless_app_main_style;
-lv_obj_t *wireless_ip_textfield = NULL;
 lv_obj_t * throbber = NULL; 
 
 lv_task_t * _wireless_app_task;
@@ -47,7 +45,6 @@ LV_IMG_DECLARE(refresh_32px);
 LV_FONT_DECLARE(Ubuntu_72px);
 
 static void exit_wireless_app_main_event_cb( lv_obj_t * obj, lv_event_t event );
-static void wireless_textarea_event_cb( lv_obj_t * obj, lv_event_t event );
 static void enter_wireless_app_next_event_cb( lv_obj_t * obj, lv_event_t event );
 void wireless_app_task( lv_task_t * task );
 
@@ -183,12 +180,7 @@ static void enter_wireless_app_next_event_cb( lv_obj_t * obj, lv_event_t event )
 
 static void exit_wireless_app_main_event_cb( lv_obj_t * obj, lv_event_t event ) {
     switch( event ) {
-        case( LV_EVENT_CLICKED ):       if(wireless_result_cont != NULL)
-                                        {
-                                            lv_obj_del( wireless_result_cont );      
-                                            wireless_result_cont = NULL;   
-                                        }            
-                                        mainbar_jump_to_maintile( LV_ANIM_OFF );
+        case( LV_EVENT_CLICKED ):       mainbar_jump_to_maintile( LV_ANIM_OFF );
                                         break;
     }
 }

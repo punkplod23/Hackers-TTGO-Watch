@@ -49,6 +49,7 @@
 #include "app/subnet/subnet_app.h"
 #include "app/iplookup/iplookup_app.h"
 #include "app/wireless/wireless_app.h"
+#include "app/wifimon/wifimon_app.h"
 #include "app/IRController/IRController.h"
 #include "app/stopwatch/stopwatch_app.h"
 #include "app/alarm_clock/alarm_clock.h"
@@ -108,6 +109,7 @@ void setup()
     iplookup_app_setup();
     sshclient_app_setup();
     wireless_app_setup();
+    wifimon_app_setup();
     IRController_setup();
     stopwatch_app_setup();
     alarm_clock_setup();
