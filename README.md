@@ -69,7 +69,7 @@ pio run -t uploadfs
 
 # Call for ideas    
 
-If you have something you would like to see built for the watch (especially network/security tools) then please let me know using github issues. I will also make a tutorial about how to program your own apps shortly.     
+If you have something you would like to see built for the watch (especially network/security tools) then please let me know using github issues. ~I will also make a tutorial about how to program your own apps shortly.~ (Now started here: https://github.com/linuxthor/My-TTGO-Watch-Dev)           
  
 # For the programmers
 
