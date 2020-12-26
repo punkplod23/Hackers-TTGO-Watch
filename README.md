@@ -1,4 +1,4 @@
-# My-TTGO-Watch
+# Hackers-TTGO-Watch
 
 ![time](images/main.png?raw=true "time")
 ![apps](images/watch.png?raw=true "apps")
