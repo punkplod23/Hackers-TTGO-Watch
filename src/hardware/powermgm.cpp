@@ -40,7 +40,6 @@
 #include "sound.h"
 
 #include "gui/mainbar/mainbar.h"
-#include <app/alarm_clock/alarm_in_progress.h>
 
 EventGroupHandle_t powermgm_status = NULL;
 portMUX_TYPE DRAM_ATTR powermgmMux = portMUX_INITIALIZER_UNLOCKED;
@@ -68,6 +67,12 @@ void powermgm_setup( void ) {
 }
 
 void powermgm_loop( void ) {
+    //Check if its a long press
+    if( powermgm_get_event( POWERMGM_PMU_LONG_BUTTON  ) ) {
+        powermgm_send_event_cb( POWERMGM_PMU_LONG_BUTTON );
+        powermgm_clear_event( POWERMGM_PMU_LONG_BUTTON );
+    }
+
     // check if a button or doubleclick was release
     if( powermgm_get_event( POWERMGM_PMU_BUTTON | POWERMGM_BMA_DOUBLECLICK | POWERMGM_BMA_TILT | POWERMGM_RTC_ALARM ) ) {
         if ( powermgm_get_event( POWERMGM_STANDBY ) || powermgm_get_event( POWERMGM_SILENCE_WAKEUP ) ) {
@@ -102,7 +107,7 @@ void powermgm_loop( void ) {
             setCpuFrequencyMhz(240);
             powermgm_set_event( POWERMGM_WAKEUP );
             powermgm_send_event_cb( POWERMGM_WAKEUP );
-            //motor_vibe(3);
+            motor_vibe(3);
         }
 
         log_i("Free heap: %d", ESP.getFreeHeap());
@@ -122,7 +127,7 @@ void powermgm_loop( void ) {
         adc_power_off();
 
         if ( powermgm_send_event_cb( POWERMGM_STANDBY ) ) {
-            //if (!noBuzz) motor_vibe(3);  //Only buzz if a non silent wake was performed
+            if (!noBuzz) motor_vibe(3);  //Only buzz if a non silent wake was performed
             log_i("Free heap: %d", ESP.getFreeHeap());
             log_i("Free PSRAM heap: %d", ESP.getFreePsram());
             log_i("uptime: %d", millis() / 1000 );
@@ -215,4 +220,12 @@ bool powermgm_send_event_cb( EventBits_t event ) {
 
 bool powermgm_send_loop_event_cb( EventBits_t event ) {
     return( callback_send_no_log( powermgm_loop_callback, event, (void*)NULL ) );
+}
+
+void powermgm_disable_interrupts( void ) {
+    powermgm_send_event_cb( POWERMGM_DISABLE_INTERRUPTS );
+}
+
+void powermgm_enable_interrupts( void ) {
+    powermgm_send_event_cb( POWERMGM_ENABLE_INTERRUPTS );
 }

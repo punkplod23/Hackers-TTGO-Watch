@@ -169,7 +169,7 @@ void sound_loop( void ) {
         }
         if ( wav->isRunning() && !wav->loop() ) {
             log_i("stop playing wav sound");
-            wav->stop();
+            wav->stop(); 
         }
     }
 }

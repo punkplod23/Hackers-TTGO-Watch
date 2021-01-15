@@ -50,11 +50,8 @@
 #include "app/iplookup/iplookup_app.h"
 #include "app/wireless/wireless_app.h"
 #include "app/wifimon/wifimon_app.h"
-#include "app/IRController/IRController.h"
 #include "app/stopwatch/stopwatch_app.h"
 #include "app/alarm_clock/alarm_clock.h"
-
-#include "webserver/webserver.h"
 
 TTGOClass *ttgo = TTGOClass::getWatch();
 
@@ -100,7 +97,7 @@ void setup()
     gui_setup();
 
     /*
-     * add apps and widgets here!!
+     * add apps and widgets here!!!
      */
     bluebox_app_setup();
     netscan_app_setup();
@@ -110,18 +107,17 @@ void setup()
     sshclient_app_setup();
     wireless_app_setup();
     wifimon_app_setup();
-    IRController_setup();
     stopwatch_app_setup();
     alarm_clock_setup();
 
-    /*
+  	/*
      *
      */
     if ( wifictl_get_autoon() && ( pmu_is_charging() || pmu_is_vbus_plug() || ( pmu_get_battery_voltage() > 3400) ) )
         wifictl_on();
 
-    // enable to store data in normal heap below this size
-    heap_caps_malloc_extmem_enable( 32*1024 );
+    // enable to store data in normal heap
+    heap_caps_malloc_extmem_enable( 16*1024 );
     blectl_setup();
     sound_setup();
 
