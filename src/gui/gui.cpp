@@ -109,7 +109,6 @@ bool gui_powermgm_event_cb( EventBits_t event, void *arg ) {
                                         break;
         case POWERMGM_PMU_LONG_BUTTON:  ttgo->startLvglTick();
                                         lv_disp_trig_activity( NULL );
-                                        motor_vibe(5);
                                         if ( display_get_screenshot() ) {
                                             screenshot_take();
                                             screenshot_save();
