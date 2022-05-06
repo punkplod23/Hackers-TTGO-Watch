@@ -181,8 +181,7 @@ static void enter_wireless_app_next_event_cb( lv_obj_t * obj, lv_event_t event )
 
 static void exit_wireless_app_main_event_cb( lv_obj_t * obj, lv_event_t event ) {
     switch( event ) {
-        case( LV_EVENT_CLICKED ):       esp_wifi_set_mode(WIFI_MODE_STA);
-                                        mainbar_jump_to_maintile( LV_ANIM_OFF );
+        case( LV_EVENT_CLICKED ):       mainbar_jump_to_maintile( LV_ANIM_OFF );
                                         break;
     }
 }
