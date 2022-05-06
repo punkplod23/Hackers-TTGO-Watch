@@ -313,7 +313,7 @@ void powermgm_loop( void ) {
         #ifdef NATIVE_64BIT
         #else
             if ( !lighsleep )
-                vTaskDelay( 350 );
+                vTaskDelay( 250 );
         #endif
 
         powermgm_send_loop_event_cb( POWERMGM_STANDBY );
