@@ -25,9 +25,20 @@
 
     #include "config.h"
 
-    #define STATUSBAR_HEIGHT            26
-    #define STATUSBAR_EXPAND_HEIGHT     200
+    #if defined( BIG_THEME )
+        #define STATUSBAR_HEIGHT                52
+        #define STATUSBAR_EXPAND_HEIGHT         300
+    #elif defined ( MID_THEME )
+        #define STATUSBAR_HEIGHT                26
+        #define STATUSBAR_EXPAND_HEIGHT         200
+    #else
+        #define STATUSBAR_HEIGHT                26
+        #define STATUSBAR_EXPAND_HEIGHT         200
+    #endif
 
+    /**
+     * @brief statusbar item config stucture
+     */
     typedef struct {
         lv_obj_t *icon;
         const void *symbol;
@@ -35,20 +46,27 @@
         lv_style_t *style;
     } lv_status_bar_t;
 
+    /**
+     * @brief statusbar icon set
+     */
     typedef enum {
-        STATUSBAR_BATTERY_PERCENT,
+        STATUSBAR_BATTERY_PERCENT = 0,
         STATUSBAR_BATTERY,
         STATUSBAR_BLUETOOTH,
         STATUSBAR_WIFI,
         STATUSBAR_VOLUME,
+        STATUSBAR_GPS,
         STATUSBAR_BELL,
         STATUSBAR_WARNING,
         STATUSBAR_ALARM,
         STATUSBAR_NUM
     } statusbar_icon_t;
     
+    /**
+     * @brief statusbar style set
+     */
     typedef enum {
-        STATUSBAR_STYLE_NORMAL,
+        STATUSBAR_STYLE_NORMAL = 0,
         STATUSBAR_STYLE_BLACK,
         STATUSBAR_STYLE_WHITE,
         STATUSBAR_STYLE_RED,
@@ -98,6 +116,24 @@
      * @param   expand  true if expand of false if not
      */
     void statusbar_expand( bool expand );
+    /**
+     * @brief force dark mode
+     * 
+     * @param force_dark_mode   true to force dark mode
+     */
+    void statusbar_set_force_dark( bool dark_mode );
+    /**
+     * @brief get force dark mode status
+     * 
+     * @return  true if dark mode forced
+     */
+    bool statusbar_get_force_dark( void );
+    /**
+     * @brief geth the current hidden state
+     * 
+     * @return true if hidden or false is visible
+     */
+    bool statusbar_get_hidden_state( void );
 
 #endif // _STATUSBAR_H
 

@@ -22,9 +22,24 @@
 #include "config.h"
 
 #include "splashscreen.h"
-
 #include "hardware/display.h"
-#include "gui/png_decoder/png_decoder.h"
+#include "hardware/framebuffer.h"
+#include "gui/png_decoder/lv_png.h"
+#include "gui/sjpg_decoder/lv_sjpg.h"
+#include "widget_factory.h"
+
+#ifdef NATIVE_64BIT
+    #include "utils/logging.h"
+    #include "utils/delay.h"
+#else
+    #if defined( M5PAPER )
+    #elif defined( M5CORE2 )
+    #elif defined( LILYGO_WATCH_2020_V1 ) || defined( LILYGO_WATCH_2020_V2 ) || defined( LILYGO_WATCH_2020_V3 )
+    #elif defined( LILYGO_WATCH_2021 )
+    #else
+        #error "not splashscreen pre hardware setup"
+    #endif
+#endif
 
 lv_obj_t *logo = NULL;
 lv_obj_t *preload = NULL;
@@ -35,21 +50,13 @@ LV_IMG_DECLARE(hedgehog);
 
 void splash_screen_stage_one( void ) {
 
-    TTGOClass *ttgo = TTGOClass::getWatch();
-
-    png_decoder_init();
-    lv_img_cache_set_size(100);
-
-    lv_style_init( &style );
-    lv_style_set_radius( &style, LV_OBJ_PART_MAIN, 0 );
-    lv_style_set_bg_color( &style, LV_OBJ_PART_MAIN, LV_COLOR_BLACK );
-    lv_style_set_bg_opa( &style, LV_OBJ_PART_MAIN, LV_OPA_100 );
-    lv_style_set_border_width( &style, LV_OBJ_PART_MAIN, 0 );
-    lv_style_set_text_color( &style, LV_OBJ_PART_MAIN, LV_COLOR_WHITE );
+    lv_split_jpeg_init();
+    lv_png_init();
+    lv_img_cache_set_size(250);
 
     lv_obj_t *background = lv_bar_create(lv_scr_act(), NULL);
     lv_obj_set_size( background, lv_disp_get_hor_res( NULL ), lv_disp_get_ver_res( NULL ) );
-    lv_obj_add_style( background, LV_OBJ_PART_MAIN, &style );
+    lv_obj_add_style( background, LV_OBJ_PART_MAIN, BACKGROUND_STYLE );
     lv_obj_align( background, NULL, LV_ALIGN_CENTER, 0, 0 );
 
     logo = lv_img_create( background , NULL );
@@ -68,17 +75,19 @@ void splash_screen_stage_one( void ) {
         lv_img_set_src( logo, &hedgehog );
     }
     lv_obj_align( logo, NULL, LV_ALIGN_CENTER, 0, 0 );
+    lv_obj_add_style( logo, LV_OBJ_PART_MAIN, SYSTEM_ICON_STYLE );
 
     preload = lv_bar_create( lv_scr_act(), NULL );
     lv_obj_set_size( preload, lv_disp_get_hor_res( NULL ) - 80, 20 );
-    lv_obj_add_style( preload, LV_OBJ_PART_MAIN, &style );
+    lv_obj_add_style( preload, LV_OBJ_PART_MAIN, SYSTEM_ICON_STYLE );
     lv_obj_align( preload, logo, LV_ALIGN_OUT_BOTTOM_MID, 0, 30 );
     lv_bar_set_anim_time( preload, 2000);
     lv_bar_set_value( preload, 0, LV_ANIM_ON);
+    lv_obj_set_hidden( preload, true );
 
     preload_label = lv_label_create( lv_scr_act(), NULL );
     lv_label_set_text( preload_label, "booting" );
-    lv_obj_add_style( preload_label, LV_OBJ_PART_MAIN, &style );
+    lv_obj_add_style( preload_label, LV_OBJ_PART_MAIN, SYSTEM_ICON_LABEL_STYLE );
     lv_obj_align( preload_label, preload, LV_ALIGN_OUT_BOTTOM_MID, 0, 5 );
 
     lv_disp_trig_activity( NULL );
@@ -87,10 +96,23 @@ void splash_screen_stage_one( void ) {
 
     lv_task_handler();
 
-    for( int bl = 0 ; bl < display_get_brightness() ; bl++ ) {
-        ttgo->bl->adjust( bl );
-        delay(5);
-    }    
+    #ifdef NATIVE_64BIT
+    #else
+        #ifdef M5PAPER
+            framebuffer_refresh();
+        #elif defined( LILYGO_WATCH_2020_V1 ) || defined( LILYGO_WATCH_2020_V2 ) || defined( LILYGO_WATCH_2020_V3 )
+            TTGOClass *ttgo = TTGOClass::getWatch();
+            for( int bl = 0 ; bl < display_get_brightness() ; bl++ ) {
+                ttgo->bl->adjust( bl );
+                delay(5);
+            }   
+        #elif defined( LILYGO_WATCH_2021 )   
+            for( int bl = 0 ; bl < display_get_brightness() ; bl++ ) {
+                ledcWrite(0, bl );
+                delay(5);
+            }            
+        #endif
+    #endif
 }
 
 void splash_screen_stage_update( const char* msg, int value ) {
@@ -98,7 +120,6 @@ void splash_screen_stage_update( const char* msg, int value ) {
     lv_disp_trig_activity( NULL );
     lv_task_handler();
     delay(100);
-//    lv_bar_set_value( preload, value, LV_ANIM_ON );
     lv_bar_set_value( preload, 0, LV_ANIM_ON );
     lv_label_set_text( preload_label, msg );
     lv_obj_align( preload_label, preload, LV_ALIGN_OUT_BOTTOM_MID, 0, 5 );
@@ -107,12 +128,23 @@ void splash_screen_stage_update( const char* msg, int value ) {
 }
 
 void splash_screen_stage_finish( void ) {
-    TTGOClass *ttgo = TTGOClass::getWatch();
+    #ifdef NATIVE_64BIT
+    #else
+        #ifdef M5PAPER
+        #elif defined( LILYGO_WATCH_2020_V1 ) || defined( LILYGO_WATCH_2020_V2 ) || defined( LILYGO_WATCH_2020_V3 )
+            TTGOClass *ttgo = TTGOClass::getWatch();
 
-    for( int bl = display_get_brightness() ; bl >= 0 ; bl-- ) {
-        ttgo->bl->adjust( bl );
-        delay(5);
-    }
+            for( int bl = display_get_brightness() ; bl >= 0 ; bl-- ) {
+                ttgo->bl->adjust( bl );
+                delay(5);
+            }
+        #elif defined( LILYGO_WATCH_2021 )   
+            for( int bl = display_get_brightness() ; bl >= 0 ; bl-- ) {
+                ledcWrite(0, bl );
+                delay(5);
+            }   
+        #endif
+    #endif
     lv_obj_del( logo );
     lv_obj_del( preload );
     lv_obj_del( preload_label );

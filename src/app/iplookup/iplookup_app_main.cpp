@@ -31,8 +31,10 @@
 #include "gui/mainbar/mainbar.h"
 #include "gui/statusbar.h"
 #include "gui/keyboard.h"
+#include "gui/widget_factory.h"
+#include "gui/widget_styles.h"
 
-#include "hardware/json_psram_allocator.h"
+#include "utils/json_psram_allocator.h"
 
 lv_obj_t * iplookup_result_cont = NULL;
 lv_obj_t *iplookup_app_main_tile = NULL;
@@ -122,7 +124,7 @@ void fetch_ip_info( void ) {
 void iplookup_app_main_setup( uint32_t tile_num ) {
 
     iplookup_app_main_tile = mainbar_get_tile_obj( tile_num );
-    lv_style_copy( &iplookup_app_main_style, mainbar_get_style() );
+    lv_style_copy( &iplookup_app_main_style, APP_STYLE );
 
     lv_obj_t * exit_btn = lv_imgbtn_create( iplookup_app_main_tile, NULL);
     lv_imgbtn_set_src(exit_btn, LV_BTN_STATE_RELEASED, &exit_32px);

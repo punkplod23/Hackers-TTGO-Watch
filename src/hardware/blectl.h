@@ -22,26 +22,46 @@
 #ifndef _BLECTL_H
     #define _BLECTL_H
 
-    #include "TTGO.h"
-    #include "callback.h"
+    #ifdef NATIVE_64BIT
+        #include "utils/io.h"
+    #else
+        #include <BLEServer.h>
+        #include <BLEAdvertising.h>
+    #endif
 
+    #include "callback.h"
+    #include "hardware/config/blectlconfig.h"
+
+    /**
+     * connection state
+     */
     #define BLECTL_CONNECT               _BV(0)         /** @brief event mask for blectl connect to an client */
     #define BLECTL_DISCONNECT            _BV(1)         /** @brief event mask for blectl disconnect */
-    #define BLECTL_STANDBY               _BV(2)         /** @brief event mask for blectl standby */
-    #define BLECTL_ON                    _BV(3)         /** @brief event mask for blectl on */
-    #define BLECTL_OFF                   _BV(4)         /** @brief event mask for blectl off */
-    #define BLECTL_ACTIVE                _BV(5)         /** @brief event mask for blectl active */
-    #define BLECTL_MSG                   _BV(6)         /** @brief event mask for blectl msg */
-    #define BLECTL_PIN_AUTH              _BV(7)         /** @brief event mask for blectl for pin auth, callback arg is (uint32*) */
-    #define BLECTL_PAIRING               _BV(8)         /** @brief event mask for blectl pairing requested */
-    #define BLECTL_PAIRING_SUCCESS       _BV(9)         /** @brief event mask for blectl pairing success */
-    #define BLECTL_PAIRING_ABORT         _BV(10)        /** @brief event mask for blectl pairing abort */
+    #define BLECTL_AUTHWAIT              _BV(2)         /** @brief event mask for blectl wait for auth to get connect */
+    /**
+     * power state
+     */
+    #define BLECTL_STANDBY               _BV(3)         /** @brief event mask for blectl standby */
+    #define BLECTL_ON                    _BV(4)         /** @brief event mask for blectl on */
+    #define BLECTL_OFF                   _BV(5)         /** @brief event mask for blectl off */
+    /**
+     * pairing state
+     */
+    #define BLECTL_PIN_AUTH              _BV(6)         /** @brief event mask for blectl for pin auth, callback arg is (uint32*) */
+    #define BLECTL_PAIRING               _BV(7)         /** @brief event mask for blectl pairing requested */
+    #define BLECTL_PAIRING_SUCCESS       _BV(8)         /** @brief event mask for blectl pairing success */
+    #define BLECTL_PAIRING_ABORT         _BV(9)         /** @brief event mask for blectl pairing abort */
+    /**
+     * message state
+     */
+    #define BLECTL_MSG                   _BV(10)        /** @brief event mask for blectl msg */
     #define BLECTL_MSG_SEND_SUCCESS      _BV(11)        /** @brief event mask msg send success */
     #define BLECTL_MSG_SEND_ABORT        _BV(12)        /** @brief event mask msg send abort */
-
-
-    // See the following for generating UUIDs:
-    // https://www.uuidgenerator.net/
+    #define BLECTL_MSG_JSON              _BV(13)        /** @brief event mask for blectl JSON msg */
+    /**
+     *  See the following for generating UUIDs:
+     * https://www.uuidgenerator.net/
+     */
     #define SERVICE_UUID                                    BLEUUID("6E400001-B5A3-F393-E0A9-E50E24DCCA9E")     /** @brief UART service UUID */
     #define CHARACTERISTIC_UUID_RX                          BLEUUID("6E400002-B5A3-F393-E0A9-E50E24DCCA9E")
     #define CHARACTERISTIC_UUID_TX                          BLEUUID("6E400003-B5A3-F393-E0A9-E50E24DCCA9E")
@@ -75,25 +95,13 @@
     #define BATTERY_POWER_STATE_LEVEL_GOOD                  0x80
     #define BATTERY_POWER_STATE_LEVEL_CRITICALLY_LOW        0xC0
 
-    #define BLECTL_JSON_COFIG_FILE         "/blectl.json"   /** @brief defines json config file name */
-
     #define EndofText               0x03
     #define LineFeed                0x0a
     #define DataLinkEscape          0x10
 
     #define BLECTL_CHUNKSIZE        20      /** @brief chunksize for send msg */
-    #define BLECTL_CHUNKDELAY       20      /** @brief chunk delay in ms for each msg chunk */
+    #define BLECTL_CHUNKDELAY       50      /** @brief chunk delay in ms for each msg chunk */
     #define BLECTL_MSG_MTU          512     /** @brief max msg size */
-
-    /**
-     * @brief blectl config structure
-     */
-    typedef struct {
-        bool autoon = true;             /** @brief auto on/off */
-        bool advertising = true;        /** @brief advertising on/off */
-        bool enable_on_standby = false; /** @brief enable on standby on/off */
-        int32_t txpower = 1;            /** @brief tx power, valide values are from 0 to 4 */
-    } blectl_config_t;
 
     /**
      * @brief blectl send msg structure
@@ -104,7 +112,6 @@
         int32_t msglen;                 /** @brief msg lenght */
         int32_t msgpos;                 /** @brief msg postition for next send */
     } blectl_msg_t;
-
     /**
      * @brief ble setup function
      */
@@ -152,6 +159,18 @@
      */
     void blectl_set_enable_on_standby( bool enable_on_standby );
     /**
+     * @brief disable blueetooth only when disconnected
+     * 
+     * @param   disable_only_disconnected   true means enabled, false means disabled 
+     */
+    void blectl_set_disable_only_disconnected( bool disable_only_disconnected );
+    /**
+     * @brief enable show notification
+     * 
+     * @param   show_notification   true means enabled, false means disabled 
+     */
+    void blectl_set_show_notification( bool show_notification );
+    /**
      * @brief enable advertising
      * 
      * @param   advertising true means enabled, false means disabled
@@ -164,11 +183,29 @@
      */
     bool blectl_get_enable_on_standby( void );
     /**
+     * @brief get the current disable_only_disconnected config
+     * 
+     * @return  true means enabled, false means disabled
+     */
+    bool blectl_get_disable_only_disconnected( void );
+    /**
+     * @brief get the current show notification config
+     * 
+     * @return  true means enabled, false means disabled
+     */
+    bool blectl_get_show_notification( void );
+    /**
      * @brief get the current advertising config
      * 
      * @return  true means enabled, false means disabled
      */
     bool blectl_get_advertising( void );
+    /**
+     * @brief get the current custom audio notifications config
+     * 
+     * @return  the array of custom audio notifications
+     */
+    blectl_custom_audio* blectl_get_custom_audio_notifications( void );
     /**
      * @brief store the current configuration to SPIFFS
      */
@@ -190,7 +227,7 @@
      * 
      * @param   msg     pointer to a string
      */
-    void blectl_send_msg( char *msg );
+    bool blectl_send_msg( const char *msg );
     /**
      * @brief set the transmission power
      * 
@@ -223,5 +260,23 @@
      * @param enable    true if enabled, false if disable
      */
     void blectl_set_autoon( bool autoon );
+#ifndef NATIVE_64BIT
+    /**
+     * @brief get the raw BLE Server
+     */
+    BLEServer *blectl_get_ble_server( void );
+    /**
+     * @brief get the raw BLE Advertising
+     */
+    BLEAdvertising *blectl_get_ble_advertising( void );
+    /**
+     * @brief get the raw BLE Server
+     */
+    BLEServer *blectl_get_ble_server();
+    /**
+     * @brief get the raw BLE Advertising
+     */
+    BLEAdvertising *blectl_get_ble_advertising();
+#endif
 
 #endif // _BLECTL_H

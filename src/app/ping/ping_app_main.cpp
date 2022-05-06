@@ -30,6 +30,8 @@
 #include "gui/mainbar/mainbar.h"
 #include "gui/statusbar.h"
 #include "gui/keyboard.h"
+#include "gui/widget_factory.h"
+#include "gui/widget_styles.h"
 
 lv_obj_t * ping_result_cont = NULL;
 lv_obj_t *ping_app_main_tile = NULL;
@@ -105,7 +107,7 @@ void ping_app_main_scanner_try( void )
 void ping_app_main_setup( uint32_t tile_num ) {
 
     ping_app_main_tile = mainbar_get_tile_obj( tile_num );
-    lv_style_copy( &ping_app_main_style, mainbar_get_style() );
+    lv_style_copy( &ping_app_main_style, APP_STYLE );
 
     lv_obj_t * exit_btn = lv_imgbtn_create( ping_app_main_tile, NULL);
     lv_imgbtn_set_src(exit_btn, LV_BTN_STATE_RELEASED, &exit_32px);

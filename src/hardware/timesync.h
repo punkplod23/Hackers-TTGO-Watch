@@ -22,28 +22,12 @@
 #ifndef _TIME_SYNC_H
     #define _TIME_SYNC_H
 
-    #include <TTGO.h>
     #include "callback.h"
+    #include "hardware/config/timesyncconfig.h"
 
-    #define TIME_SYNC_REQUEST       _BV(0)
-    #define TIME_SYNC_OK            _BV(1)
-
-    #define TIMESYNC_JSON_CONFIG_FILE   "/timesync.json"    /** @brief defines json config file name */
-    #define TIMEZONE_NAME_DEFAULT       "Etc/GMT"           /** @brief defines default time zone name */
-    #define TIMEZONE_RULE_DEFAULT       "GMT0"              /** @brief defines default time zone rule */
-
-    /**
-     * @brief time sync config structure
-     */
-    typedef struct {
-        bool timesync = true;               /** @brief time sync on/off */
-        bool daylightsave = false;          /** @brief day light save on/off */
-        int32_t timezone = 0;               /** @brief time zone from 0..24, 0 means -12 */
-        bool use_24hr_clock = true;         /** @brief 12h/24h time format */
-        char timezone_name[32] = TIMEZONE_NAME_DEFAULT; /** @brief name of the time zone to use */
-        char timezone_rule[48] = TIMEZONE_RULE_DEFAULT; /** @brief time zone rule to use */
-    } timesync_config_t;
-
+    #define TIME_SYNC_REQUEST       _BV(0)              /** @brief event mask to start a time sync request */
+    #define TIME_SYNC_OK            _BV(1)              /** @brief event mask for time sync ok */
+    #define TIME_SYNC_UPDATE        _BV(2)              /** @brief event mask for time sync is started */
     /**
      * @brief setup display
      */
@@ -104,9 +88,29 @@
      * @param use24  true or false
      */
     void timesync_set_24hr( bool use24 );
+    /**
+     * @brief get the current timezone name
+     * 
+     * @return pointer to the current timezine name
+     */
     char* timesync_get_timezone_name( void );
+    /**
+     * @brief set the current timezine name
+     * 
+     * @param timezone_name pointer to the timezone name
+     */
     void timesync_set_timezone_name( char * timezone_name );
+    /**
+     * @brief get the current timezone rule
+     * 
+     * @return pointer to the current timezine rule
+     */
     char* timesync_get_timezone_rule( void );
+    /**
+     * @brief set the current timezine rule
+     * 
+     * @param timezone_rule pointer to the timezone rule
+     */
     void timesync_set_timezone_rule( const char * timezone_rule );
     /**
      * @brief wrapper function to sync the system with rtc
@@ -116,7 +120,7 @@
      * @brief wrapper function to sync the rtc with system
      */
     void timesyncToRTC( void );
-   /**
+    /**
      * @brief registers a callback function which is called on a corresponding event
      * 
      * @param   event           possible values: TIME_SYNC_OK
@@ -126,5 +130,27 @@
      * @return  true if success, false if failed
      */
     bool timesync_register_cb( EventBits_t event, CALLBACK_FUNC callback_func, const char *id );
-
+    /**
+     * @brief get the right formated time string
+     * 
+     * @param buf pointer to an string buffer
+     * @param buf_len size of the string buffer
+     */
+    void timesync_get_current_timestring( char * buf, size_t buf_len );
+    /**
+     * @brief get the right formated date string
+     * 
+     * @param buf pointer to an string buffer
+     * @param buf_len size of the string buffer
+     */    
+    void timesync_get_current_datestring( char * buf, size_t buf_len );
+    /**
+     * @brief get if the current time is inbetween to specified times
+     * 
+     * @param start time
+     * @param end time
+     * 
+     * @return  true if success, false if failed
+     */    
+    bool timesync_is_between( struct tm start, struct tm end );
 #endif // _TIME_SYNC_H

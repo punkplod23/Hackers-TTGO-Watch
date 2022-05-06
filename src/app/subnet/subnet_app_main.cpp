@@ -30,6 +30,8 @@
 #include "gui/mainbar/mainbar.h"
 #include "gui/statusbar.h"
 #include "gui/keyboard.h"
+#include "gui/widget_factory.h"
+#include "gui/widget_styles.h"
 
 lv_obj_t * subnet_result_cont = NULL;
 lv_obj_t *subnet_app_main_tile = NULL;
@@ -62,7 +64,7 @@ void subnet_app_main_subnet_try( int netmask )
 void subnet_app_main_setup( uint32_t tile_num ) {
 
     subnet_app_main_tile = mainbar_get_tile_obj( tile_num );
-    lv_style_copy( &subnet_app_main_style, mainbar_get_style() );
+    lv_style_copy( &subnet_app_main_style, APP_STYLE );
 
     lv_obj_t * exit_btn = lv_imgbtn_create( subnet_app_main_tile, NULL);
     lv_imgbtn_set_src(exit_btn, LV_BTN_STATE_RELEASED, &exit_32px);

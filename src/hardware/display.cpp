@@ -20,15 +20,27 @@
  *  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  */
 #include "config.h"
-#include <TTGO.h>
-
+#include "lvgl.h"
 #include "display.h"
 #include "powermgm.h"
-#include "motor.h"
-#include "bma.h"
-#include "gui/gui.h"
+#include "framebuffer.h"
+#include "motion.h"
 
-#include "json_psram_allocator.h"
+#ifdef NATIVE_64BIT
+    #include "utils/logging.h"
+#else
+    #if defined( M5PAPER )
+        #include <M5EPD.h>
+    #elif defined( M5CORE2 )
+        #include <M5Core2.h>
+    #elif defined( LILYGO_WATCH_2020_V1 ) || defined( LILYGO_WATCH_2020_V2 ) || defined( LILYGO_WATCH_2020_V3 )
+        #include <TTGO.h>
+    #elif defined( LILYGO_WATCH_2021 )
+        #include <twatch2021_config.h>
+    #else
+        #error "no hardware driver for display"
+    #endif
+#endif
 
 display_config_t display_config;
 callback_t *display_callback = NULL;
@@ -41,17 +53,43 @@ bool display_powermgm_loop_cb( EventBits_t event, void *arg );
 bool display_send_event_cb( EventBits_t event, void *arg );
 
 void display_setup( void ) {
-    display_read_config();
+    /**
+     * load config from json
+     */
+    display_config.load();
+    /**
+     * setup backlight and rotation
+     */
+    #ifdef NATIVE_64BIT
+    #else
+        #if defined( M5PAPER )
 
-    TTGOClass *ttgo = TTGOClass::getWatch();
-
-    ttgo->openBL();
-    ttgo->bl->adjust( 0 );
-    ttgo->tft->setRotation( display_config.rotation / 90 );
-    bma_set_rotate_tilt( display_config.rotation );
-
-    powermgm_register_cb( POWERMGM_SILENCE_WAKEUP | POWERMGM_STANDBY | POWERMGM_WAKEUP, display_powermgm_event_cb, "display" );
-    powermgm_register_loop_cb( POWERMGM_WAKEUP, display_powermgm_loop_cb, "display loop" );
+        #elif defined( M5CORE2 )
+            M5.Axp.SetLcdVoltage( 2532 + display_get_brightness() );
+        #elif defined( LILYGO_WATCH_2020_V1 ) || defined( LILYGO_WATCH_2020_V2 ) || defined( LILYGO_WATCH_2020_V3 )
+            TTGOClass *ttgo = TTGOClass::getWatch();
+            ttgo->tft->init();
+            ttgo->openBL();
+            ttgo->bl->adjust( 0 );
+            ttgo->tft->setRotation( display_config.rotation / 90 );
+            bma_set_rotate_tilt( display_config.rotation );
+        #elif defined( LILYGO_WATCH_2021 )
+            pinMode(TFT_LED, OUTPUT);
+            ledcSetup(0, 4000, 8);
+            ledcAttachPin(TFT_LED, 0);
+            ledcWrite(0, 0XFF);
+        #endif
+    #endif
+    /**
+     * setup framebuffer
+     */
+    framebuffer_setup();
+    /**
+     * register powermgm and pwermgm loop callback functions
+     */
+//    powermgm_register_cb( POWERMGM_SILENCE_WAKEUP | POWERMGM_STANDBY | POWERMGM_WAKEUP, display_powermgm_event_cb, "powermgm display" );
+    powermgm_register_cb( POWERMGM_SILENCE_WAKEUP | POWERMGM_STANDBY | POWERMGM_WAKEUP, display_powermgm_event_cb, "powermgm display" );
+    powermgm_register_loop_cb( POWERMGM_WAKEUP, display_powermgm_loop_cb, "powermgm display loop" );
 }
 
 bool display_powermgm_event_cb( EventBits_t event, void *arg ) {
@@ -72,26 +110,65 @@ bool display_powermgm_loop_cb( EventBits_t event, void *arg ) {
 }
 
 void display_loop( void ) {
-  TTGOClass *ttgo = TTGOClass::getWatch();
+    #ifdef NATIVE_64BIT
+    #else
+        #if defined( M5PAPER )
 
-  if ( dest_brightness != brightness ) {
-    if ( brightness < dest_brightness ) {
-      brightness++;
-      ttgo->bl->adjust( brightness );
-    }
-    else {
-      brightness--;
-      ttgo->bl->adjust( brightness );
-    }
-  }
-  if ( display_get_timeout() != DISPLAY_MAX_TIMEOUT ) {
-    if ( lv_disp_get_inactive_time(NULL) > ( ( display_get_timeout() * 1000 ) - display_get_brightness() * 8 ) ) {
-        dest_brightness = ( ( display_get_timeout() * 1000 ) - lv_disp_get_inactive_time( NULL ) ) / 8 ;
-    }
-    else {
-        dest_brightness = display_get_brightness();
-    }
-  }
+        #elif defined( M5CORE2 )
+
+        #elif defined( LILYGO_WATCH_2020_V1 ) || defined( LILYGO_WATCH_2020_V2 ) || defined( LILYGO_WATCH_2020_V3 )
+            TTGOClass *ttgo = TTGOClass::getWatch();
+            /**
+             * check if backlight adjust has change
+             */
+            if ( dest_brightness != brightness ) {
+                if ( brightness < dest_brightness ) {
+                    brightness++;
+                    ttgo->bl->adjust( brightness );
+                }
+                else {
+                    brightness--;
+                    ttgo->bl->adjust( brightness );
+                }
+            }
+            /**
+             * check timeout
+             */
+            if ( display_get_timeout() != DISPLAY_MAX_TIMEOUT ) {
+                if ( lv_disp_get_inactive_time(NULL) > ( ( display_get_timeout() * 1000 ) - display_get_brightness() * 8 ) ) {
+                    dest_brightness = ( ( display_get_timeout() * 1000 ) - lv_disp_get_inactive_time( NULL ) ) / 8 ;
+                }
+                else {
+                    dest_brightness = display_get_brightness();
+                }
+            }
+        #elif defined( LILYGO_WATCH_2021 )   
+            /**
+             * check if backlight adjust has change
+             */
+            if ( dest_brightness != brightness ) {
+                if ( brightness < dest_brightness ) {
+                    brightness++;
+                    ledcWrite(0, brightness );
+                }
+                else {
+                    brightness--;
+                    ledcWrite(0, brightness );
+                }
+            }
+            /**
+             * check timeout
+             */
+            if ( display_get_timeout() != DISPLAY_MAX_TIMEOUT ) {
+                if ( lv_disp_get_inactive_time(NULL) > ( ( display_get_timeout() * 1000 ) - display_get_brightness() * 8 ) ) {
+                    dest_brightness = ( ( display_get_timeout() * 1000 ) - lv_disp_get_inactive_time( NULL ) ) / 8 ;
+                }
+                else {
+                    dest_brightness = display_get_brightness();
+                }
+            }
+        #endif
+    #endif
 }
 
 bool display_register_cb( EventBits_t event, CALLBACK_FUNC callback_func, const char *id ) {
@@ -110,95 +187,103 @@ bool display_send_event_cb( EventBits_t event, void *arg ) {
 }
 
 void display_standby( void ) {
-  TTGOClass *ttgo = TTGOClass::getWatch();
-  log_i("go standby");
-  ttgo->bl->adjust( 0 );
-  ttgo->displaySleep();
-  ttgo->closeBL();
-  brightness = 0;
-  dest_brightness = 0;
+    #ifdef NATIVE_64BIT
+    #else
+        #if defined( M5PAPER )
+
+        #elif defined( M5CORE2 )
+            M5.Lcd.sleep();
+        #elif defined( LILYGO_WATCH_2020_V1 ) || defined( LILYGO_WATCH_2020_V2 ) || defined( LILYGO_WATCH_2020_V3 )
+            TTGOClass *ttgo = TTGOClass::getWatch();
+            ttgo->bl->adjust( 0 );
+            ttgo->displaySleep();
+            ttgo->closeBL();
+            brightness = 0;
+            dest_brightness = 0;
+            #if defined( LILYGO_WATCH_2020_V2 )
+                ttgo->power->setLDO2Voltage( 3300 );
+                ttgo->power->setLDO3Voltage( 3300 );
+                ttgo->power->setPowerOutPut( AXP202_LDO2, false );
+                ttgo->power->setPowerOutPut( AXP202_LDO3, false );
+            #endif
+        #elif defined( LILYGO_WATCH_2021 )   
+            ledcWrite( 0, 0 );
+        #endif
+    #endif
+    //log_i("go standby");
 }
 
 void display_wakeup( bool silence ) {
-  TTGOClass *ttgo = TTGOClass::getWatch();
-
-  // wakeup without display
-  if ( silence ) {
-    log_i("go silence wakeup");
-    ttgo->openBL();
-    ttgo->displayWakeup();
-    ttgo->bl->adjust( 0 );
-    brightness = 0;
-    dest_brightness = 0;
-  }
-  // wakeup with display
-  else {
-    log_i("go wakeup");
-    ttgo->openBL();
-    ttgo->displayWakeup();
-    ttgo->bl->adjust( 0 );
-    brightness = 0;
-    dest_brightness = display_get_brightness();
-  }
+    /**
+     * wakeup with or without display
+     */
+    if ( silence ) {
+        #ifdef NATIVE_64BIT
+        #else
+            #if defined( M5PAPER )
+                M5.enableEPDPower();
+                delay(25);
+            #elif defined( M5CORE2 )
+            #elif defined( LILYGO_WATCH_2020_V1 ) || defined( LILYGO_WATCH_2020_V2 ) || defined( LILYGO_WATCH_2020_V3 )
+                TTGOClass *ttgo = TTGOClass::getWatch();
+                #if defined( LILYGO_WATCH_2020_V2 )
+                    ttgo->power->setLDO2Voltage( 3300 );
+                    ttgo->power->setLDO3Voltage( 3300 );
+                    ttgo->power->setPowerOutPut( AXP202_LDO2, true );
+                    ttgo->power->setPowerOutPut( AXP202_LDO3, true );
+                #endif
+                ttgo->openBL();
+                ttgo->displayWakeup();
+                ttgo->bl->adjust( 0 );
+                brightness = 0;
+                dest_brightness = 0;
+            #elif defined( LILYGO_WATCH_2021 )   
+                ledcWrite( 0, 0 );
+                brightness = 0;
+                dest_brightness = 0;
+            #endif
+        #endif
+        //log_i("go silence wakeup");
+    }
+    else {
+        #ifdef NATIVE_64BIT
+        #else
+            #if defined( M5PAPER )
+                M5.enableEPDPower();
+                delay(25);
+            #elif defined( M5CORE2 )
+                M5.Lcd.begin();
+                M5.Lcd.wakeup();
+                M5.Axp.SetLcdVoltage( 2532 + display_get_brightness() );
+            #elif defined( LILYGO_WATCH_2020_V1 ) || defined( LILYGO_WATCH_2020_V2 ) || defined( LILYGO_WATCH_2020_V3 )
+                TTGOClass *ttgo = TTGOClass::getWatch();
+                #if defined( LILYGO_WATCH_2020_V2 )
+                    ttgo->power->setLDO2Voltage( 3300 );
+                    ttgo->power->setLDO3Voltage( 3300 );
+                    ttgo->power->setPowerOutPut( AXP202_LDO2, true );
+                    ttgo->power->setPowerOutPut( AXP202_LDO3, true );
+                #endif
+                ttgo->openBL();
+                ttgo->displayWakeup();
+                ttgo->bl->adjust( 0 );
+                brightness = 0;
+                dest_brightness = display_get_brightness();
+            #elif defined( LILYGO_WATCH_2021 )   
+                ledcWrite( 0, 0 );
+                brightness = 0;
+                dest_brightness = display_get_brightness();;
+            #endif
+        #endif
+        //log_i("go wakeup");
+    }
 }
 
 void display_save_config( void ) {
-    fs::File file = SPIFFS.open( DISPLAY_JSON_CONFIG_FILE, FILE_WRITE );
-
-    if (!file) {
-        log_e("Can't open file: %s!", DISPLAY_JSON_CONFIG_FILE );
-    }
-    else {
-        SpiRamJsonDocument doc( 1000 );
-
-        doc["brightness"] = display_config.brightness;
-        doc["rotation"] = display_config.rotation;
-        doc["timeout"] = display_config.timeout;
-        doc["block_return_maintile"] = display_config.block_return_maintile;
-        doc["long_press_take_screenshot"] = display_config.long_press_take_screenshot;
-        doc["background_image"] = display_config.background_image;
-
-        if ( serializeJsonPretty( doc, file ) == 0) {
-            log_e("Failed to write config file");
-        }
-        doc.clear();
-    }
-    file.close();
+      display_config.save();
 }
 
 void display_read_config( void ) {
-    fs::File file = SPIFFS.open( DISPLAY_JSON_CONFIG_FILE, FILE_READ );
-    if (!file) {
-        log_e("Can't open file: %s!", DISPLAY_JSON_CONFIG_FILE );
-    }
-    else {
-        int filesize = file.size();
-        SpiRamJsonDocument doc( filesize * 2 );
-
-        DeserializationError error = deserializeJson( doc, file );
-        if ( error ) {
-            log_e("update check deserializeJson() failed: %s", error.c_str() );
-        }
-        else {
-            display_config.brightness = doc["brightness"] | DISPLAY_MAX_BRIGHTNESS / 2;
-            display_config.rotation = doc["rotation"] | DISPLAY_MIN_ROTATE;
-            display_config.timeout = doc["timeout"] | DISPLAY_MIN_TIMEOUT;
-            display_config.block_return_maintile = doc["block_return_maintile"] | false;
-            display_config.long_press_take_screenshot = doc["long_press_take_screenshot"] | false;
-            display_config.background_image = doc["background_image"] | 2;
-        }        
-        doc.clear();
-    }
-    file.close();
-}
-
-bool display_get_screenshot( void ) {
-    return( display_config.long_press_take_screenshot );
-}
-
-void display_set_screenshot( bool screenshot ) {
-    display_config.long_press_take_screenshot = screenshot;
-    display_send_event_cb( DISPLAYCTL_SCREENSHOT, (void *)screenshot );
+    display_config.load();
 }
 
 uint32_t display_get_timeout( void ) {
@@ -217,26 +302,58 @@ uint32_t display_get_brightness( void ) {
 void display_set_brightness( uint32_t brightness ) {
     display_config.brightness = brightness;
     dest_brightness = brightness;
+    #ifdef NATIVE_64BIT
+
+    #else
+        #if defined ( M5CORE2 )
+        M5.Axp.SetLcdVoltage( 2532 + display_get_brightness() );
+        #endif
+    #endif
     display_send_event_cb( DISPLAYCTL_BRIGHTNESS, (void *)brightness );
 }
 
 uint32_t display_get_rotation( void ) {
-  return( display_config.rotation );
+    return( display_config.rotation );
 }
 
 bool display_get_block_return_maintile( void ) {
-  return( display_config.block_return_maintile );
+    return( display_config.block_return_maintile );
+}
+
+bool display_get_use_double_buffering( void ) {
+    return( display_config.use_double_buffering );
+}
+
+void display_set_use_double_buffering( bool use_double_buffering ) {
+    display_config.use_double_buffering = use_double_buffering;
+}
+
+bool display_get_use_dma( void ) {
+    return( display_config.use_dma );
+}
+
+void display_set_use_dma( bool use_dma ) {
+    display_config.use_dma = use_dma;
 }
 
 void display_set_block_return_maintile( bool block_return_maintile ) {
-  display_config.block_return_maintile = block_return_maintile;
+    display_config.block_return_maintile = block_return_maintile;
 }
 
 void display_set_rotation( uint32_t rotation ) {
-  TTGOClass *ttgo = TTGOClass::getWatch();
-  display_config.rotation = rotation;
-  ttgo->tft->setRotation( rotation / 90 );
-  lv_obj_invalidate( lv_scr_act() );
+    #ifdef NATIVE_64BIT
+    #else
+        #if defined( M5PAPER )
+        #elif defined( M5CORE2 )
+            M5.Lcd.setRotation( rotation / 90 );
+        #elif defined( LILYGO_WATCH_2020_V1 ) || defined( LILYGO_WATCH_2020_V2 ) || defined( LILYGO_WATCH_2020_V3 )
+            TTGOClass *ttgo = TTGOClass::getWatch();
+            display_config.rotation = rotation;
+            ttgo->tft->setRotation( rotation / 90 );
+        #endif
+    #endif
+    display_config.rotation = rotation;
+    lv_obj_invalidate( lv_scr_act() );
 }
 
 uint32_t display_get_background_image( void ) {
@@ -245,4 +362,12 @@ uint32_t display_get_background_image( void ) {
 
 void display_set_background_image( uint32_t background_image ) {
     display_config.background_image = background_image;
+}
+
+void display_set_vibe( bool vibe ) {
+    display_config.vibe = vibe;
+}
+
+bool display_get_vibe( void ) {
+    return display_config.vibe;
 }

@@ -22,8 +22,9 @@
 #ifndef _BLUETOOTH_MEDIA_H
     #define _BLUETOOTH_MEDIA_H
 
-    #include <TTGO.h>
-
+    /**
+     * @brief setup bluetooth media control tile
+     */
     void bluetooth_media_tile_setup( void );
 
 #endif // _BLUETOOTH_MEDIA_H

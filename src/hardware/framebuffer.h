@@ -21,7 +21,38 @@
  */
 #ifndef _FRAMEBUFFER_H
     #define _FRAMEBUFFER_H
-
-    void framebuffer_setup( void );
     
+    #include "lvgl.h"
+    #include "config.h"
+
+    #ifdef NATIVE_64BIT
+            #define FRAMEBUFFER_BUFFER_W        LV_HOR_RES_MAX
+            #define FRAMEBUFFER_BUFFER_H        LV_VER_RES_MAX
+    #else
+        #if defined( M5PAPER )
+            #define FRAMEBUFFER_BUFFER_W        RES_X_MAX
+            #define FRAMEBUFFER_BUFFER_H        RES_Y_MAX
+            #define FRAMEBUFFER_REFRESH_DELAY   100
+        #elif defined( M5CORE2 )
+            #define FRAMEBUFFER_BUFFER_W        RES_X_MAX
+            #define FRAMEBUFFER_BUFFER_H        10
+        #elif defined( LILYGO_WATCH_2020_V1 ) || defined( LILYGO_WATCH_2020_V2 ) || defined( LILYGO_WATCH_2020_V3 )
+            #define FRAMEBUFFER_BUFFER_W        RES_X_MAX
+            #define FRAMEBUFFER_BUFFER_H        10
+        #elif defined( LILYGO_WATCH_2021 )
+            #define FRAMEBUFFER_BUFFER_W        RES_X_MAX
+            #define FRAMEBUFFER_BUFFER_H        10
+        #endif
+    #endif
+
+    #define FRAMEBUFFER_BUFFER_SIZE     ( FRAMEBUFFER_BUFFER_W * FRAMEBUFFER_BUFFER_H )
+
+    /**
+     * @brief setup framebuffer
+     */
+    void framebuffer_setup( void );
+    /**
+     * @brief force framebuffer refresh to screen/display
+     */
+    void framebuffer_refresh( void );
 #endif // _FRAMEBUFFER_H

@@ -19,8 +19,6 @@
  *  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  */
 #include "config.h"
-#include <TTGO.h>
-#include <SPIFFS.h>
 #include <time.h>
 
 #include "rtcctl.h"
@@ -28,26 +26,41 @@
 #include "callback.h"
 #include "timesync.h"
 
-#include "hardware/powermgm.h"
-#include "hardware/json_psram_allocator.h"
+#ifdef NATIVE_64BIT
+    #include "utils/logging.h"
+    #include "utils/millis.h"
 
-#define VERSION_KEY "version"
-#define ENABLED_KEY "enabled"
-#define HOUR_KEY "hour"
-#define MINUTE_KEY "minute"
-#define WEEK_DAYS_KEY "week_days" 
+    volatile bool rtc_irq_flag = false;
+#else
+    #if defined( M5PAPER )
+        #include <M5EPD.h>
+        #include <SPIFFS.h>
+    #elif defined( M5CORE2 )
+        #include <M5Core2.h>
+    #elif defined( LILYGO_WATCH_2020_V1 ) || defined( LILYGO_WATCH_2020_V2 ) || defined( LILYGO_WATCH_2020_V3 )
+        #include "TTGO.h"
+    #elif defined( LILYGO_WATCH_2021 )
+        #include <pcf8563.h>
 
-static rtcctl_alarm_t alarm_data = {
-    .enabled = false,
-    .hour = 0,
-    .minute = 0,
-    .week_days = { false, false, false, false, false, false, false }
-}; 
+        PCF8563_Class rtc;
+    #else
+        #warning "no hardware driver for rtcctl"
+    #endif
+    #include <sys/time.h>
+
+    volatile bool DRAM_ATTR rtc_irq_flag = false;
+    portMUX_TYPE DRAM_ATTR RTC_IRQ_Mux = portMUX_INITIALIZER_UNLOCKED;
+    void IRAM_ATTR rtcctl_irq( void );
+
+    void IRAM_ATTR rtcctl_irq( void ) {
+        portENTER_CRITICAL_ISR(&RTC_IRQ_Mux);
+        rtc_irq_flag = true;
+        portEXIT_CRITICAL_ISR(&RTC_IRQ_Mux);
+    }
+#endif
+
+static rtcctl_alarm_t alarm_data; 
 static time_t alarm_time = 0;
-
-volatile bool DRAM_ATTR rtc_irq_flag = false;
-portMUX_TYPE DRAM_ATTR RTC_IRQ_Mux = portMUX_INITIALIZER_UNLOCKED;
-void IRAM_ATTR rtcctl_irq( void );
 
 bool rtcctl_powermgm_event_cb( EventBits_t event, void *arg );
 bool rtcctl_powermgm_loop_cb( EventBits_t event, void *arg );
@@ -59,13 +72,41 @@ void rtcctl_store_data( void );
 callback_t *rtcctl_callback = NULL;
 
 void rtcctl_setup( void ) {
+#ifdef NATIVE_64BIT
 
-    pinMode( RTC_INT_PIN, INPUT_PULLUP);
-    attachInterrupt( RTC_INT_PIN, &rtcctl_irq, FALLING );
+#else
+    #if defined( M5PAPER )
+        M5.RTC.begin();
+    #elif defined( M5CORE2 )
+        M5.Rtc.begin();
+    #elif defined( LILYGO_WATCH_2020_V1 ) || defined( LILYGO_WATCH_2020_V2 ) || defined( LILYGO_WATCH_2020_V3 )
+        /**
+         * fix issue #276
+         * disable timer and clk if enabled from older projects
+         */
+        TTGOClass *ttgo = TTGOClass::getWatch();
+        if ( ttgo->rtc->isTimerActive() || ttgo->rtc->isTimerEnable() ) {
+            log_i("clear/disable rtc timer");
+            ttgo->rtc->clearTimer();
+            ttgo->rtc->disableTimer();
+        }
+        ttgo->rtc->disableCLK();
 
-    powermgm_register_cb( POWERMGM_SILENCE_WAKEUP | POWERMGM_STANDBY | POWERMGM_WAKEUP | POWERMGM_ENABLE_INTERRUPTS | POWERMGM_DISABLE_INTERRUPTS , rtcctl_powermgm_event_cb, "rtcctl" );
-    powermgm_register_loop_cb( POWERMGM_SILENCE_WAKEUP | POWERMGM_WAKEUP, rtcctl_powermgm_loop_cb, "rtcctl loop" );
-    timesync_register_cb( TIME_SYNC_OK, rtcctl_timesync_event_cb, "rtcctl timesync" );
+        pinMode( RTC_INT_PIN, INPUT_PULLUP);
+        attachInterrupt( RTC_INT_PIN, &rtcctl_irq, FALLING );
+    #elif defined( LILYGO_WATCH_2021 )
+        rtc.begin();
+        if ( rtc.isTimerActive() || rtc.isTimerEnable() ) {
+            log_i("clear/disable rtc timer");
+            rtc.clearTimer();
+            rtc.disableTimer();
+        }
+        rtc.disableCLK();
+    #endif
+#endif
+    powermgm_register_cb( POWERMGM_SILENCE_WAKEUP | POWERMGM_STANDBY | POWERMGM_WAKEUP | POWERMGM_ENABLE_INTERRUPTS | POWERMGM_DISABLE_INTERRUPTS , rtcctl_powermgm_event_cb, "powermgm rtcctl" );
+    powermgm_register_loop_cb( POWERMGM_SILENCE_WAKEUP | POWERMGM_STANDBY | POWERMGM_WAKEUP, rtcctl_powermgm_loop_cb, "powermgm rtcctl loop" );
+    timesync_register_cb( TIME_SYNC_OK, rtcctl_timesync_event_cb, "timesync rtcctl" );
 
     rtcctl_load_data();
 }
@@ -74,12 +115,21 @@ bool rtcctl_send_event_cb( EventBits_t event ) {
     return( callback_send( rtcctl_callback, event, (void*)NULL ) );
 }
 
+static bool is_enabled( void ) {
+    return alarm_data.enabled;
+}
+
 bool is_any_day_enabled( void ) {
     for (int index = 0; index < DAYS_IN_WEEK; ++index){
         if (alarm_data.week_days[index])
             return true; 
     }
     return false;
+}
+
+static bool is_day_checked( int wday ) {
+    // No day checked mean ALL days
+    return alarm_data.week_days[wday] || !is_any_day_enabled();
 }
 
 time_t find_next_alarm_day( int day_of_week, time_t now ) {
@@ -92,7 +142,7 @@ time_t find_next_alarm_day( int day_of_week, time_t now ) {
         if (++wday_index == DAYS_IN_WEEK){
             wday_index = 0;
         } 
-        if (alarm_data.week_days[wday_index]){
+        if (is_day_checked( wday_index )){
             return ret_val;
         }        
     } while (wday_index != day_of_week);
@@ -101,22 +151,28 @@ time_t find_next_alarm_day( int day_of_week, time_t now ) {
 }
 
 void set_next_alarm( void ) {
-    TTGOClass *ttgo = TTGOClass::getWatch();
 
-    if ( !is_any_day_enabled() ) {
+
+    if ( !is_enabled() ) {
+#ifdef NATIVE_64BIT
+
+#else
+    #if defined( M5PAPER )
+//        M5.RTC.begin();
+    #elif defined( M5CORE2 )
+
+    #elif defined( LILYGO_WATCH_2020_V1 ) || defined( LILYGO_WATCH_2020_V2 ) || defined( LILYGO_WATCH_2020_V3 )
+        TTGOClass *ttgo = TTGOClass::getWatch();
         ttgo->rtc->setAlarm( PCF8563_NO_ALARM, PCF8563_NO_ALARM, PCF8563_NO_ALARM, PCF8563_NO_ALARM );    
+    #elif defined( LILYGO_WATCH_2021 )
+        rtc.setAlarm( PCF8563_NO_ALARM, PCF8563_NO_ALARM, PCF8563_NO_ALARM, PCF8563_NO_ALARM );        
+    #else
+        #warning "no alarm rtcctl function"
+    #endif
+#endif
         rtcctl_send_event_cb( RTCCTL_ALARM_TERM_SET );
         return;
     } 
-
-    //trc and system must be synchronized, it is important when alarm has been raised and we want to set next concurency
-    //if the synchronisation is not done the time can be set to now again
-    //ttgo->rtc->syncToSystem();
-
-    //FIXME: for now would be better to synchronize to rtc because time zone setting is not finished yet (#124).
-    //Unfortunately, each synchToRtc without a NTP synchronization inacurate internal clock
-    //This issue is complex and should be solbed when timezone setting will be finished .
-    // timesyncToRTC();
 
     time_t now;
     time( &now );
@@ -130,57 +186,151 @@ void set_next_alarm( void ) {
     alarm_tm.tm_min = alarm_data.minute;
     alarm_time = mktime( &alarm_tm );
 
-    if ( !alarm_data.week_days[ alarm_tm.tm_wday ] || alarm_time <= now ) {
+    if ( alarm_time <= now  || !is_day_checked( alarm_tm.tm_wday ) ) {
         alarm_time = find_next_alarm_day( alarm_tm.tm_wday, alarm_time );
         localtime_r( &alarm_time, &alarm_tm );
     }
 
-    // convert local alarm time into GMT0 alarm time, it is necessary sine rtc store time in GMT0
+    /*
+     * convert local alarm time into GMT0 alarm time, it is necessary sine rtc store time in GMT0
+     */
     log_i("next local alarm time: %02d:%02d day: %d", alarm_tm.tm_hour, alarm_tm.tm_min, alarm_tm.tm_mday );
     gmtime_r( &alarm_time, &alarm_tm );
     log_i("next GMT0 alarm time: %02d:%02d day %d", alarm_tm.tm_hour, alarm_tm.tm_min, alarm_tm.tm_mday );
 
-    // it is better define alarm by day in month rather than weekday. This way will be work-around an error in pcf8563 source and will avoid eaising alarm when there is only one alarm in the week (today) and alarm time is set to now
-    ttgo->rtc->setAlarm( alarm_tm.tm_hour, alarm_tm.tm_min, alarm_tm.tm_mday, PCF8563_NO_ALARM );
+#ifdef NATIVE_64BIT
+
+#else
+    #if defined( M5PAPER )
+
+    #elif defined( M5CORE2 )
+
+    #elif defined( LILYGO_WATCH_2020_V1 ) || defined( LILYGO_WATCH_2020_V2 ) || defined( LILYGO_WATCH_2020_V3 )
+        /*
+         * it is better define alarm by day in month rather than weekday.
+         * This way will be work-around an error in pcf8563 source and 
+         * will avoid eaising alarm when there is only one alarm in the week (today) and alarm time is set to now
+         */
+        TTGOClass *ttgo = TTGOClass::getWatch();
+        ttgo->rtc->setAlarm( alarm_tm.tm_hour, alarm_tm.tm_min, alarm_tm.tm_mday, PCF8563_NO_ALARM );
+    #elif defined( LILYGO_WATCH_2021 )
+        rtc.setAlarm( alarm_tm.tm_hour, alarm_tm.tm_min, alarm_tm.tm_mday, PCF8563_NO_ALARM );
+    #else
+        #warning "no alarm rtcctl function"
+    #endif
+#endif
     rtcctl_send_event_cb( RTCCTL_ALARM_TERM_SET );
 }
 
 void rtcctl_set_next_alarm( void ) {
-    TTGOClass *ttgo = TTGOClass::getWatch();
 
     if (alarm_data.enabled){
+#ifdef NATIVE_64BIT
+
+#else
+    #if defined( M5PAPER )
+//        M5.RTC.clearIRQ();
+    #elif defined( M5CORE2 )
+
+    #elif defined( LILYGO_WATCH_2020_V1 ) || defined( LILYGO_WATCH_2020_V2 ) || defined( LILYGO_WATCH_2020_V3 )
+        TTGOClass *ttgo = TTGOClass::getWatch();
         ttgo->rtc->disableAlarm();
+    #elif defined( LILYGO_WATCH_2021 )
+        rtc.disableAlarm();
+    #else
+        #warning "no alarm rtcctl function"
+    #endif
+#endif
     }
 
     set_next_alarm();
     
     if (alarm_data.enabled){
+#ifdef NATIVE_64BIT
+
+#else
+    #if defined( M5PAPER )
+//        M5.RTC.setAlarmIRQ();
+    #elif defined( M5CORE2 )
+
+    #elif defined( LILYGO_WATCH_2020_V1 ) || defined( LILYGO_WATCH_2020_V2 ) || defined( LILYGO_WATCH_2020_V3 )
+        TTGOClass *ttgo = TTGOClass::getWatch();
         ttgo->rtc->enableAlarm();
+    #elif defined( LILYGO_WATCH_2021 )
+        rtc.enableAlarm();
+    #else
+        #warning "no alarm rtcctl function"
+    #endif
+#endif
     }
 }
 
 bool rtcctl_powermgm_event_cb( EventBits_t event, void *arg ) {
     switch( event ) {
-        case POWERMGM_STANDBY:          log_i("go standby");
-                                        gpio_wakeup_enable( (gpio_num_t)RTC_INT_PIN, GPIO_INTR_LOW_LEVEL );
-                                        esp_sleep_enable_gpio_wakeup ();
+        case POWERMGM_STANDBY:          
+                                        #ifdef NATIVE_64BIT
+                                         
+                                        #else
+                                            #if defined( M5PAPER )
+                                            #elif defined( M5CORE2 )
+                                            #elif defined( LILYGO_WATCH_2020_V1 ) || defined( LILYGO_WATCH_2020_V2 ) || defined( LILYGO_WATCH_2020_V3 )
+                                                gpio_wakeup_enable( (gpio_num_t)RTC_INT_PIN, GPIO_INTR_LOW_LEVEL );
+                                                esp_sleep_enable_gpio_wakeup ();
+                                            #elif defined( LILYGO_WATCH_2021 )
+                                            #else
+                                                #warning "no rtcctl powermgm standby event"
+                                            #endif
+                                        #endif
                                         break;
-        case POWERMGM_WAKEUP:           log_i("go wakeup");
-                                        break;
-        case POWERMGM_SILENCE_WAKEUP:   log_i("go silence wakeup");
-                                        break;
+        case POWERMGM_WAKEUP:           break;
+        case POWERMGM_SILENCE_WAKEUP:   break;
         case POWERMGM_ENABLE_INTERRUPTS:
-                                        attachInterrupt( RTC_INT_PIN, &rtcctl_irq, FALLING );
+                                        #ifdef NATIVE_64BIT
+
+                                        #else
+                                            #if defined( M5PAPER )
+                                            #elif defined( M5CORE2 )
+                                            #elif defined( LILYGO_WATCH_2020_V1 ) || defined( LILYGO_WATCH_2020_V2 ) || defined( LILYGO_WATCH_2020_V3 )
+                                                attachInterrupt( RTC_INT_PIN, &rtcctl_irq, FALLING );
+                                            #elif defined( LILYGO_WATCH_2021 )
+                                            #else
+                                                #warning "no rtcctl powermgm enable interrupts event"
+                                            #endif
+                                        #endif
                                         break;
         case POWERMGM_DISABLE_INTERRUPTS:
-                                        detachInterrupt( RTC_INT_PIN );
+                                        #ifdef NATIVE_64BIT
+
+                                        #else
+                                            #if defined( M5PAPER )
+                                            #elif defined( M5CORE2 )
+                                            #elif defined( LILYGO_WATCH_2020_V1 ) || defined( LILYGO_WATCH_2020_V2 ) || defined( LILYGO_WATCH_2020_V3 )
+                                                detachInterrupt( RTC_INT_PIN );
+                                            #elif defined( LILYGO_WATCH_2021 )
+                                            #else
+                                                #warning "no rtcctl powermgm disable interrupts event"
+                                            #endif
+                                        #endif
                                         break;
     }
     return( true );
 }
 
 bool rtcctl_powermgm_loop_cb( EventBits_t event, void *arg ) {
-    rtcctl_loop();
+    bool temp_rtc_irq_flag = false;
+
+#ifndef NATIVE_64BIT
+    portENTER_CRITICAL( &RTC_IRQ_Mux );
+    temp_rtc_irq_flag = rtc_irq_flag;
+    rtc_irq_flag = false;
+    portEXIT_CRITICAL( &RTC_IRQ_Mux );
+#endif
+    if ( temp_rtc_irq_flag ) {
+        /*
+        * fire callback
+        */
+        rtcctl_send_event_cb( RTCCTL_ALARM_OCCURRED );
+    }
     return( true );
 }
 
@@ -191,26 +341,6 @@ bool rtcctl_timesync_event_cb( EventBits_t event, void *arg ) {
             break;
     }
     return( true );
-}
-
-void IRAM_ATTR rtcctl_irq( void ) {
-    portENTER_CRITICAL_ISR(&RTC_IRQ_Mux);
-    rtc_irq_flag = true;
-    portEXIT_CRITICAL_ISR(&RTC_IRQ_Mux);
-    powermgm_set_event( POWERMGM_RTC_ALARM );
-}
-
-void rtcctl_loop( void ) {
-    // fire callback
-    if ( !powermgm_get_event( POWERMGM_STANDBY ) ) {
-        portENTER_CRITICAL( &RTC_IRQ_Mux );
-        bool temp_rtc_irq_flag = rtc_irq_flag;
-        rtc_irq_flag = false;
-        portEXIT_CRITICAL( &RTC_IRQ_Mux );
-        if ( temp_rtc_irq_flag ) {
-            rtcctl_send_event_cb( RTCCTL_ALARM_OCCURRED );
-        }
-    }
 }
 
 bool rtcctl_register_cb( EventBits_t event, CALLBACK_FUNC callback_func, const char *id ) {
@@ -225,71 +355,34 @@ bool rtcctl_register_cb( EventBits_t event, CALLBACK_FUNC callback_func, const c
 }
 
 void rtcctl_load_data( void ) {
-    if (! SPIFFS.exists( CONFIG_FILE_PATH ) ) {
-        return; //wil be used default values set during theier creation
-    }
-
-    fs::File file = SPIFFS.open( CONFIG_FILE_PATH, FILE_READ );
-
-    if (!file) {
-        log_e("Can't open file: %s!", CONFIG_FILE_PATH );
-    }
-    else {
-        int filesize = file.size();
-        SpiRamJsonDocument doc( filesize * 2 );
-
-        DeserializationError error = deserializeJson( doc, file );
-        if ( error ) {
-            log_e("rtcctl config deserializeJson() failed: %s", error.c_str() );
-        }
-        else {
-            rtcctl_alarm_t stored_data;
-            stored_data.enabled = doc[ENABLED_KEY].as<bool>();
-            stored_data.hour = doc[HOUR_KEY].as<uint8_t>();
-            stored_data.minute =  doc[MINUTE_KEY].as<uint8_t>();
-            uint8_t stored_week_days = doc[WEEK_DAYS_KEY].as<uint8_t>();
-            for (int index = 0; index < DAYS_IN_WEEK; ++index){
-                stored_data.week_days[index] = ((stored_week_days >> index) & 1) != 0;
-            }
-            rtcctl_set_alarm(&stored_data);
-            doc.clear();
-        }
-    }
-    file.close();
+    rtcctl_alarm_t stored_data;
+    stored_data.load();
+    rtcctl_set_alarm(&stored_data);
 }
 
 void rtcctl_store_data( void ) {
-    fs::File file = SPIFFS.open( CONFIG_FILE_PATH, FILE_WRITE );
-    if (!file) {
-        log_e("Can't open file: %s!", CONFIG_FILE_PATH );
-    }
-    else {
-        SpiRamJsonDocument doc( 1000 );
-
-        doc[VERSION_KEY] = 1;
-        doc[ENABLED_KEY] = alarm_data.enabled;
-        doc[HOUR_KEY] = alarm_data.hour;
-        doc[MINUTE_KEY] = alarm_data.minute;
-
-        uint8_t week_days_to_store = 0;
-        for (int index = 0; index < DAYS_IN_WEEK; ++index){
-            week_days_to_store |= alarm_data.week_days[index] << index; 
-        }
-        doc[WEEK_DAYS_KEY] = week_days_to_store;
-        
-        if ( serializeJsonPretty( doc, file ) == 0) {
-            log_e("Failed to write rtcctl config file");
-        }
-        doc.clear();
-    }
-    file.close();
+    alarm_data.save();
 }
 
 void rtcctl_set_alarm( rtcctl_alarm_t *data ) {
-    TTGOClass *ttgo = TTGOClass::getWatch();
     bool was_enabled = alarm_data.enabled;
     if (was_enabled){
-        ttgo->rtc->disableAlarm();
+        #ifdef NATIVE_64BIT
+
+        #else
+            #if defined( M5PAPER )
+
+            #elif defined( M5CORE2 )
+
+            #elif defined( LILYGO_WATCH_2020_V1 ) || defined( LILYGO_WATCH_2020_V2 ) || defined( LILYGO_WATCH_2020_V3 )
+                TTGOClass *ttgo = TTGOClass::getWatch();
+                ttgo->rtc->disableAlarm();
+            #elif defined( LILYGO_WATCH_2021 )
+                rtc.disableAlarm();
+            #else
+                #warning "no rtcctl alarm function"
+            #endif
+        #endif
     }
     alarm_data = *data;
     rtcctl_store_data();
@@ -297,15 +390,49 @@ void rtcctl_set_alarm( rtcctl_alarm_t *data ) {
     set_next_alarm();
 
     if (was_enabled && !alarm_data.enabled){
-        //already disabled
+        /*
+         * already disabled
+         */
         rtcctl_send_event_cb( RTCCTL_ALARM_DISABLED );
     }
     else if (was_enabled && alarm_data.enabled){
-        ttgo->rtc->enableAlarm();
-        //nothing actually changed;
+        /*
+         * nothing actually changed;
+         */
+        #ifdef NATIVE_64BIT
+
+        #else
+            #if defined( M5PAPER )
+
+            #elif defined( M5CORE2 )
+
+            #elif defined( LILYGO_WATCH_2020_V1 ) || defined( LILYGO_WATCH_2020_V2 ) || defined( LILYGO_WATCH_2020_V3 )
+                TTGOClass *ttgo = TTGOClass::getWatch();
+                ttgo->rtc->enableAlarm();
+            #elif defined( LILYGO_WATCH_2021 )
+                rtc.enableAlarm();
+            #else
+                #warning "no rtcctl alarm function"
+            #endif
+        #endif
     }
     else if (!was_enabled && alarm_data.enabled){
-        ttgo->rtc->enableAlarm();
+        #ifdef NATIVE_64BIT
+
+        #else
+            #if defined( M5PAPER )
+
+            #elif defined( M5CORE2 )
+
+            #elif defined( LILYGO_WATCH_2020_V1 ) || defined( LILYGO_WATCH_2020_V2 ) || defined( LILYGO_WATCH_2020_V3 )
+                TTGOClass *ttgo = TTGOClass::getWatch();
+                ttgo->rtc->enableAlarm();
+            #elif defined( LILYGO_WATCH_2021 )
+                rtc.enableAlarm();
+            #else
+                #warning "no rtcctl alarm function"
+            #endif
+        #endif
         rtcctl_send_event_cb( RTCCTL_ALARM_ENABLED );   
     }    
 }
@@ -315,10 +442,125 @@ rtcctl_alarm_t *rtcctl_get_alarm_data( void ) {
 }
 
 int rtcctl_get_next_alarm_week_day( void ) {
-    if (!is_any_day_enabled()){
+    if (!is_enabled()){
         return RTCCTL_ALARM_NOT_SET;
     }
     tm alarm_tm;
     localtime_r(&alarm_time, &alarm_tm);
     return alarm_tm.tm_wday;
+}
+
+void rtcctl_syncToSystem( void ) {
+    #ifdef NATIVE_64BIT
+    
+    #else
+        #if defined( M5PAPER )
+            struct tm t_tm;
+            struct timeval val;
+            /**
+             * get GMT0 RTC time
+             */
+            rtc_time_t RTCtime;
+            rtc_date_t RTCDate;
+
+            M5.RTC.getTime(&RTCtime);
+            M5.RTC.getDate(&RTCDate);
+
+            t_tm.tm_hour = RTCtime.hour;
+            t_tm.tm_min = RTCtime.min;
+            t_tm.tm_sec = RTCtime.sec;
+            t_tm.tm_year = RTCDate.year - 1900;    //Year, whose value starts from 1900
+            t_tm.tm_mon = RTCDate.mon - 1;       //Month (starting from January, 0 for January) - Value range is [0,11]
+            t_tm.tm_mday = RTCDate.day;
+            val.tv_sec = mktime(&t_tm);
+            val.tv_usec = 0;
+            settimeofday(&val, NULL);
+        #elif defined( M5CORE2 )
+            struct tm t_tm;
+            struct timeval val;
+            /**
+             * get GMT0 RTC time
+             */
+            
+            RTC_TimeTypeDef RTCtime;
+            RTC_DateTypeDef RTCDate;
+
+            M5.Rtc.GetTime( &RTCtime );
+            M5.Rtc.GetDate( &RTCDate );
+
+            t_tm.tm_hour = RTCtime.Hours;
+            t_tm.tm_min = RTCtime.Minutes;
+            t_tm.tm_sec = RTCtime.Seconds;
+            t_tm.tm_year = RTCDate.Year - 1900;    //Year, whose value starts from 1900
+            t_tm.tm_mon = RTCDate.Month - 1;       //Month (starting from January, 0 for January) - Value range is [0,11]
+            t_tm.tm_mday = RTCDate.Date;
+            val.tv_sec = mktime(&t_tm);
+            val.tv_usec = 0;
+            settimeofday(&val, NULL);
+        #elif defined( LILYGO_WATCH_2020_V1 ) || defined( LILYGO_WATCH_2020_V2 ) || defined( LILYGO_WATCH_2020_V3 )
+            TTGOClass *ttgo = TTGOClass::getWatch();
+            ttgo->rtc->syncToSystem();
+        #elif defined( LILYGO_WATCH_2021 )
+            rtc.syncToSystem();
+        #endif
+    #endif
+}
+
+void rtcctl_syncToRtc( void ) {
+    #ifdef NATIVE_64BIT
+    
+    #else
+        #if defined( M5PAPER )
+            time_t now;
+            struct tm  t_tm;
+            /**
+             * get GMT0 system time
+             */
+            time(&now);
+            localtime_r(&now, &t_tm);
+            /**
+             * store GMT0 System time to RTC
+             */
+            rtc_time_t RTCtime;
+            rtc_date_t RTCDate;
+
+            RTCtime.hour = t_tm.tm_hour;
+            RTCtime.min = t_tm.tm_min;
+            RTCtime.sec = t_tm.tm_sec;
+            M5.RTC.setTime(&RTCtime);
+
+            RTCDate.year = t_tm.tm_year + 1900;
+            RTCDate.mon = t_tm.tm_mon + 1;
+            RTCDate.day = t_tm.tm_mday;
+            M5.RTC.setDate(&RTCDate);
+        #elif defined( M5CORE2 )
+            time_t now;
+            struct tm  t_tm;
+            /**
+             * get GMT0 system time
+             */
+            time(&now);
+            localtime_r(&now, &t_tm);
+            /**
+             * store GMT0 System time to RTC
+             */
+            RTC_TimeTypeDef RTCtime;
+            RTC_DateTypeDef RTCDate;
+
+            RTCtime.Hours = t_tm.tm_hour;
+            RTCtime.Minutes = t_tm.tm_min;
+            RTCtime.Seconds = t_tm.tm_sec;
+            M5.Rtc.SetTime( &RTCtime );
+
+            RTCDate.Year = t_tm.tm_year + 1900;
+            RTCDate.Month = t_tm.tm_mon + 1;
+            RTCDate.Date = t_tm.tm_mday;
+            M5.Rtc.SetDate( &RTCDate );
+        #elif defined( LILYGO_WATCH_2020_V1 ) || defined( LILYGO_WATCH_2020_V2 ) || defined( LILYGO_WATCH_2020_V3 )
+            TTGOClass *ttgo = TTGOClass::getWatch();
+            ttgo->rtc->syncToRtc();
+        #elif defined( LILYGO_WATCH_2021 )
+            rtc.syncToRtc();
+        #endif
+    #endif
 }

@@ -22,8 +22,6 @@
 #ifndef _ICON_H
     #define _ICON_H
 
-    #include <TTGO.h>
-
     LV_IMG_DECLARE(info_ok_16px);
     LV_IMG_DECLARE(info_fail_16px);
     LV_IMG_DECLARE(info_update_16px);
@@ -31,7 +29,9 @@
     LV_IMG_DECLARE(info_2_16px);
     LV_IMG_DECLARE(info_3_16px);
     LV_IMG_DECLARE(info_n_16px);
-
+    /**
+     * @brief indicator sets
+     */
     typedef enum {
         ICON_INDICATOR_OK = 0,
         ICON_INDICATOR_FAIL,
@@ -41,13 +41,6 @@
         ICON_INDICATOR_3,
         ICON_INDICATOR_N
     } icon_indicator_t;
-
-    typedef enum {
-        ICON_BTN_SETUP = 0,
-        ICON_BTN_REFRESH,
-        ICON_BTN_EXIT
-    } icon_btn_t;
-
     /**
      * @brief icon structure
      */

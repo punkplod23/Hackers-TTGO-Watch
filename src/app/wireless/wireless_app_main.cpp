@@ -32,6 +32,8 @@
 #include "gui/mainbar/mainbar.h"
 #include "gui/statusbar.h"
 #include "gui/keyboard.h"
+#include "gui/widget_factory.h"
+#include "gui/widget_styles.h"
 
 lv_obj_t *wireless_app_main_tile = NULL;
 lv_style_t wireless_app_main_style;
@@ -67,7 +69,7 @@ uint8_t beacon_raw[] = {
 	0x05, 0x04, 0x01, 0x02, 0x00, 0x00,				// 52-57: Traffic Indication Map	
 };
 
-char *rick_ssids[] = {
+const char *rick_ssids[] = {
 	"01 Never gonna give you up",
 	"02 Never gonna let you down",
 	"03 Never gonna run around",
@@ -91,7 +93,7 @@ esp_err_t event_handler(void *ctx, system_event_t *event) {
 void wireless_app_main_setup( uint32_t tile_num ) {
 
     wireless_app_main_tile = mainbar_get_tile_obj( tile_num );
-    lv_style_copy( &wireless_app_main_style, mainbar_get_style() );
+    lv_style_copy( &wireless_app_main_style, APP_STYLE );
 
     lv_obj_t * exit_btn = lv_imgbtn_create( wireless_app_main_tile, NULL);
     lv_imgbtn_set_src(exit_btn, LV_BTN_STATE_RELEASED, &exit_32px);

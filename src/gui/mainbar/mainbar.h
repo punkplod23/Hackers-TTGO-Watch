@@ -22,21 +22,40 @@
 #ifndef _MAINBAR_H
     #define _MAINBAR_H
 
-    #include <TTGO.h>
+    #include "hardware/callback.h"
+    #include "hardware/button.h"
 
     typedef void ( * MAINBAR_CALLBACK_FUNC ) ( void );
 
-    typedef struct {
-        lv_obj_t *tile;
-        MAINBAR_CALLBACK_FUNC activate_cb;
-        MAINBAR_CALLBACK_FUNC hibernate_cb;
-        uint16_t x;
-        uint16_t y;
-        const char *id;
-    } lv_tile_t;
+    #define MAINBAR_INFO_LOG            log_d
 
-    #define MAINBAR_APP_TILE_X_START     0
-    #define MAINBAR_APP_TILE_Y_START     4
+    #define MAINBAR_APP_TILE_X_START    0                       /** @brief x start pos for app tiles **/
+    #define MAINBAR_APP_TILE_Y_START    8                       /** @brief y start for app tiles **/
+    #define MAINBAR_MAX_HISTORY         16                      /** @brief max tile history deep **/
+    #define STATUSBAR_HIDE              true                    /** @brief hide statusbar **/
+    #define STATUSBAR_SHOW              false                   /** @brief show statusbar **/
+    /**
+     * @brief mainbar history structure
+     */
+    typedef struct {
+        uint32_t         entrys;                                /** @brief number of history entrys */
+        lv_point_t       tile[ MAINBAR_MAX_HISTORY ];           /** @brief stored tile coordinates */
+        bool             statusbar[ MAINBAR_MAX_HISTORY ];      /** @brief stored statusbar state */
+        lv_anim_enable_t anim[ MAINBAR_MAX_HISTORY ];           /** @brief stored anim enable state */
+    } mainbar_history_t;
+
+    /**
+     * @brief mainbar tile controll structure
+     */
+    typedef struct {
+        lv_obj_t *tile;                                         /** @brief pointer to the lv tile obj */
+        MAINBAR_CALLBACK_FUNC activate_cb;                      /** @brief pointer to a activate function when enter this tile */
+        MAINBAR_CALLBACK_FUNC hibernate_cb;                     /** @brief pointer to a hibernate function when leave this tile */
+        CALLBACK_FUNC button_cb;                                /** @brief pointer to a button event function tile is active */
+        uint16_t x;                                             /** @brief tile x pos */
+        uint16_t y;                                             /** @brief tile y pos */
+        const char *id;                                         /** @brief pointer to the tile id */
+    } lv_tile_t;
 
     /**
      * @brief mainbar setup funktion
@@ -49,6 +68,7 @@
      * @param   anim    LV_ANIM_ON or LV_ANIM_OFF for animated switch
      */
     void mainbar_jump_to_tilenumber( uint32_t tile_number, lv_anim_enable_t anim );
+    void mainbar_jump_to_tilenumber( uint32_t tile_number, lv_anim_enable_t anim, bool statusbar );
     /**
      * @brief jump direct to main tile
      * @param   anim    LV_ANIM_ON or LV_ANIM_OFF for animated switch
@@ -57,24 +77,26 @@
     /**
      * @brief add a tile at a specific position
      * 
-     * @param   x   x position
-     * @param   y   y position
+     * @param   x       x position
+     * @param   y       y position
+     * @param   id      id string
+     * @param   style   lv_style
      * 
      * @return  tile number
      */
-    uint32_t mainbar_add_tile( uint16_t x, uint16_t y, const char *id );
+    uint32_t mainbar_add_tile( uint16_t x, uint16_t y, const char *id, lv_style_t *style );
     /**
      * @brief add a independent app tile formation
      * 
      *  predefine tiles
      * 
-     *  +---+---+       1 = main tile
-     *  | 1 | 2 |       2 = app tile
-     *  +---+---+       3 = note tile
-     *  | 3 | 4 |       4 = setup tile
-     *  +---+---+
+     *  +---+---+---+---+       0 = main tile
+     *  | 0 | 1 | 2 | 3 |       1..3 = app tile
+     *  +---+---+---+---+       4 = note tile
+     *  | 4 | 5 | 6 |           5..6 = setup tile
+     *  +---+---+---+
      * 
-     *  app tile
+     *  app/setup tile
      * 
      *  +---+---+    +---+   +---+---+
      *  | n |n+1|    | n |   | n |n+1|
@@ -84,10 +106,37 @@
      * 
      * @param   x   x size in tiles
      * @param   y   y size in tiles
+     * @param   id      id string
      * 
      * @return  tile number, if get more than 1 tile it is the first tile number
      */
     uint32_t mainbar_add_app_tile( uint16_t x, uint16_t y, const char *id );
+    /**
+     * @brief add a independent setup tile formation
+     * 
+     *  predefine tiles
+     * 
+     *  +---+---+---+---+       0 = main tile
+     *  | 0 | 1 | 2 | 3 |       1..3 = app tile
+     *  +---+---+---+---+       4 = note tile
+     *  | 4 | 5 | 6 |           5..6 = setup tile
+     *  +---+---+---+
+     * 
+     *  app/setup tile
+     * 
+     *  +---+---+    +---+   +---+---+
+     *  | n |n+1|    | n |   | n |n+1|
+     *  +---+---+    +---+   +---+---+
+     *  |n+2|n+3|    |n+1|
+     *  +---+---+    +---+
+     * 
+     * @param   x   x size in tiles
+     * @param   y   y size in tiles
+     * @param   id      id string
+     * 
+     * @return  tile number, if get more than 1 tile it is the first tile number
+     */
+    uint32_t mainbar_add_setup_tile( uint16_t x, uint16_t y, const char *id );
     /**
      * @brief get the lv_obj_t for a specific tile number
      *
@@ -115,29 +164,14 @@
      */
     bool mainbar_add_tile_activate_cb( uint32_t tile_number, MAINBAR_CALLBACK_FUNC activate_cb );
     /**
-     * @brief get main tile style
+     * @brief register an activate callback function when enter the tile
      * 
-     * @return  pointer to the v_style_t object
-     */
-    lv_style_t *mainbar_get_style( void );
-    /**
-     * @brief get main tile switch style
+     * @param   tile_number     tile number
+     * @param   button_cb       pointer to the button callback function
      * 
-     * @return  pointer to the v_style_t object
+     * @return  true or false, true means registration was success
      */
-    lv_style_t *mainbar_get_switch_style( void );
-    /**
-     * @brief get main tile slider style
-     * 
-     * @return  pointer to the v_style_t object
-     */
-    lv_style_t *mainbar_get_slider_style( void );
-    /**
-     * @brief get main tile button style
-     * 
-     * @return  pointer to the v_style_t object
-     */
-    lv_style_t *mainbar_get_button_style( void );
+    bool mainbar_add_tile_button_cb( uint32_t tile_number, CALLBACK_FUNC button_cb );
     /**
      * @brief
      */
@@ -146,5 +180,13 @@
      * @brief
      */
     void mainbar_add_slide_element( lv_obj_t *element );
+    /**
+     * jump back in tile history
+     */
+    void mainbar_jump_back( void );
+    /**
+     * @brief clear tile history
+     */
+    void mainbar_clear_history( void );
 
 #endif // _MAINBAR_H

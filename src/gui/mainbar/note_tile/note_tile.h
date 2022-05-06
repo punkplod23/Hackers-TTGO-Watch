@@ -22,8 +22,15 @@
 #ifndef _NOTE_TILE_H
     #define _NOTE_TILE_H
 
-    #include <TTGO.h>
-
+    /**
+     * @brief setup note tile
+     */
     void note_tile_setup( void );
+    /**
+     * @brief get the tile number for the note tile
+     * 
+     * @return  tile number
+     */
+    uint32_t note_tile_get_tile_num( void );
 
 #endif // _NOTE_TILE_H

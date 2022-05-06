@@ -20,20 +20,24 @@
  *  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  */
 #include "config.h"
-#include "TTGO.h"
 #include <sys/time.h>
-
-#include "wifictl.h"
 #include "timesync.h"
 #include "powermgm.h"
-#include "blectl.h"
-#include "json_psram_allocator.h"
 #include "callback.h"
+#include "hardware/config/timesyncconfig.h"
 
-EventGroupHandle_t time_event_handle = NULL;
-TaskHandle_t _timesync_Task;
+#ifdef NATIVE_64BIT
+    #include "utils/logging.h"
+#else  
+    #include "wifictl.h"
+    #include "blectl.h"
+    #include "rtcctl.h"
+
+    EventGroupHandle_t time_event_handle = NULL;
+    TaskHandle_t _timesync_Task;
+#endif
+
 timesync_config_t timesync_config;
-
 callback_t *timesync_callback = NULL;
 
 void timesync_Task( void * pvParameters );
@@ -43,51 +47,81 @@ bool timesync_blectl_event_cb( EventBits_t event, void *arg );
 bool timesync_send_event_cb( EventBits_t event, void *arg );
 
 void timesync_setup( void ) {
-
-    timesync_read_config();
-    time_event_handle = xEventGroupCreate();
-
-    wifictl_register_cb( WIFICTL_CONNECT, timesync_wifictl_event_cb, "timesync" );
-    blectl_register_cb( BLECTL_MSG, timesync_blectl_event_cb, "time sync ble" );
-    powermgm_register_cb( POWERMGM_SILENCE_WAKEUP | POWERMGM_STANDBY | POWERMGM_WAKEUP, timesync_powermgm_event_cb, "timesync" );
-
+    /*
+     * load config from json
+     */
+    timesync_config.load();
+    #ifndef NATIVE_64BIT
+        /*
+        * create timesync event group
+        */
+        time_event_handle = xEventGroupCreate();
+        /*
+        * register wigi, ble and powermgm callback function
+        */
+        wifictl_register_cb( WIFICTL_CONNECT, timesync_wifictl_event_cb, "wifictl timesync" );
+        blectl_register_cb( BLECTL_MSG, timesync_blectl_event_cb, "blectl timesync" );
+    #endif
+    powermgm_register_cb( POWERMGM_SILENCE_WAKEUP | POWERMGM_STANDBY | POWERMGM_WAKEUP, timesync_powermgm_event_cb, "powermgm timesync" );
+    /*
+     * sync time from rtc to system
+     */
     timesyncToSystem();
 }
 
 bool timesync_register_cb( EventBits_t event, CALLBACK_FUNC callback_func, const char *id ) {
+        /*
+     * check if an callback table exist, if not allocate a callback table
+     */
     if ( timesync_callback == NULL ) {
         timesync_callback = callback_init( "timesync" );
         if ( timesync_callback == NULL ) {
             log_e("timesync callback alloc failed");
             while(true);
         }
-    }    
+    }
+    /*
+     * register an callback entry and return them
+     */
     return( callback_register( timesync_callback, event, callback_func, id ) );
 }
 
 bool timesync_send_event_cb( EventBits_t event, void *arg ) {
+    /*
+     * call all callbacks with her event mask
+     */
     return( callback_send( timesync_callback, event, (void*)NULL ) );
 }
 
 bool timesync_powermgm_event_cb( EventBits_t event, void *arg ) {
     switch( event ) {
         case POWERMGM_STANDBY:          
-            // only update rtc time when an NTP timesync was success
+#ifdef NATIVE_64BIT
+            log_i("go standby");
+#else
+            /*
+             * only update rtc time when an NTP timesync was success
+             */
             if ( xEventGroupGetBits( time_event_handle ) & TIME_SYNC_OK ) {
                 timesyncToRTC();
                 xEventGroupClearBits( time_event_handle, TIME_SYNC_OK );
-                log_i("go standby, timesync to RTC");
+                log_i("NTP sync success - updating RTC");
             }
             else {
                 log_i("go standby");
             }
+#endif
             break;
         case POWERMGM_WAKEUP:           
-            log_i("go wakeup");
+            /*
+             * sync time from rtc to system after wakeup
+             */
             timesyncToSystem();
             break;
         case POWERMGM_SILENCE_WAKEUP:   
-            log_i("go silence wakeup");
+            /*
+             * sync time from rtc to system after silence wakeup
+             */
             timesyncToSystem();
             break;
     }
@@ -95,24 +129,36 @@ bool timesync_powermgm_event_cb( EventBits_t event, void *arg ) {
 }
 
 bool timesync_wifictl_event_cb( EventBits_t event, void *arg ) {
+#ifndef NATIVE_64BIT
     switch ( event ) {
-        case WIFICTL_CONNECT:       
+        case WIFICTL_CONNECT:
+            /*
+             * sync time when autosync is enabled
+             */ 
             if ( timesync_config.timesync ) {
-            if ( xEventGroupGetBits( time_event_handle ) & TIME_SYNC_REQUEST ) {
-                break;
+                /*
+                 * check if another sync request is running
+                 */
+                if ( xEventGroupGetBits( time_event_handle ) & TIME_SYNC_REQUEST ) {
+                    break;
+                }
+                else {
+                    /*
+                     * start timesync task
+                     */
+                    xEventGroupSetBits( time_event_handle, TIME_SYNC_REQUEST );
+                    xTaskCreate(    timesync_Task,       /* Function to implement the task */
+                                    "timesync Task",     /* Name of the task */
+                                    2000,                /* Stack size in words */
+                                    NULL,                /* Task input parameter */
+                                    1,                   /* Priority of the task */
+                                    &_timesync_Task );   /* Task handle. */
+                }
             }
-            else {
-                xEventGroupSetBits( time_event_handle, TIME_SYNC_REQUEST );
-                xTaskCreate(  timesync_Task,      /* Function to implement the task */
-                            "timesync Task",    /* Name of the task */
-                            2000,              /* Stack size in words */
-                            NULL,               /* Task input parameter */
-                            1,                  /* Priority of the task */
-                            &_timesync_Task );  /* Task handle. */
-            }
-        }
-        break;
+            break;
+
     }
+#endif
     return( true );
 }
 
@@ -121,6 +167,7 @@ bool timesync_blectl_event_cb( EventBits_t event, void *arg ) {
     time_t now;
     struct timeval new_now;
 
+#ifndef NATIVE_64BIT
     switch( event ) {
         case BLECTL_MSG:
             settime_str = strstr( (const char*)arg, "setTime(" );
@@ -139,63 +186,17 @@ bool timesync_blectl_event_cb( EventBits_t event, void *arg ) {
                 xEventGroupSetBits( time_event_handle, TIME_SYNC_OK );
             }
     }
+#endif
+
     return( true );
 }
 
 void timesync_save_config( void ) {
-    fs::File file = SPIFFS.open( TIMESYNC_JSON_CONFIG_FILE, FILE_WRITE );
-
-    if (!file) {
-        log_e("Can't open file: %s!", TIMESYNC_JSON_CONFIG_FILE );
-    }
-    else {
-        SpiRamJsonDocument doc( 1000 );
-
-        doc["daylightsave"] = timesync_config.daylightsave;
-        doc["timesync"] = timesync_config.timesync;
-        doc["timezone"] = timesync_config.timezone;
-        doc["use_24hr_clock"] = timesync_config.use_24hr_clock;
-        doc["timezone_name"] = timesync_config.timezone_name;
-        doc["timezone_rule"] = timesync_config.timezone_rule;
-
-        if ( serializeJsonPretty( doc, file ) == 0) {
-            log_e("Failed to write config file");
-        }
-        doc.clear();
-    }
-    file.close();
+    timesync_config.save();
 }
 
 void timesync_read_config( void ) {    
-    fs::File file = SPIFFS.open( TIMESYNC_JSON_CONFIG_FILE, FILE_READ );
-
-    if (!file) {
-        log_e("Can't open file: %s!", TIMESYNC_JSON_CONFIG_FILE );
-    }
-    else {
-        int filesize = file.size();
-        SpiRamJsonDocument doc( filesize * 2 );
-
-        DeserializationError error = deserializeJson( doc, file );
-        if ( error ) {
-            log_e("update check deserializeJson() failed: %s", error.c_str() );
-        }
-        else {
-            timesync_config.daylightsave = doc["daylightsave"] | false;
-            timesync_config.timesync = doc["timesync"] | true;
-            timesync_config.timezone = doc["timezone"] | 0;
-            timesync_config.use_24hr_clock = doc["use_24hr_clock"] | true;
-            // todo: for upgrade, default name = Etc\GMTxxx based on timezone & daylightsave
-            // todo: for upgrade, default rule = GMT0 or <-xx>xx based on timezone & daylightsave
-            // todo: upgrade rtc clock to be in utc? (First sync will fix it.)
-            strlcpy( timesync_config.timezone_name, doc["timezone_name"] | TIMEZONE_NAME_DEFAULT, sizeof( timesync_config.timezone_name ) );
-            strlcpy( timesync_config.timezone_rule, doc["timezone_rule"] | TIMEZONE_RULE_DEFAULT, sizeof( timesync_config.timezone_rule ) );
-            setenv("TZ", timesync_config.timezone_rule, 1);
-            tzset();
-        }
-        doc.clear();
-    }
-    file.close();
+    timesync_config.load();
 }
 
 bool timesync_get_timesync( void ) {
@@ -220,76 +221,160 @@ int32_t timesync_get_timezone( void ) {
     return( timesync_config.timezone );
 }
 
-void timesync_set_timezone( int32_t timezone ) {
-    timesync_config.timezone = timezone;
-    timesync_save_config();
-}
-
 char* timesync_get_timezone_name( void ) {
     return( timesync_config.timezone_name );
-}
-
-void timesync_set_timezone_name( char * timezone_name ) {
-    strlcpy( timesync_config.timezone_name, timezone_name, sizeof( timesync_config.timezone_name ) );
-    timesync_save_config();
 }
 
 char* timesync_get_timezone_rule( void ) {
     return( timesync_config.timezone_rule );
 }
 
-void timesync_set_timezone_rule( const char * timezone_rule ) {
-    strlcpy( timesync_config.timezone_rule, timezone_rule, sizeof( timesync_config.timezone_rule ) );
-    setenv("TZ", timesync_config.timezone_rule, 1);
-    tzset();
-    timesync_save_config();
-    timesync_send_event_cb( TIME_SYNC_OK, (void *)NULL );
-}
-
-void timesync_set_24hr( bool use24 ) {
-    timesync_config.use_24hr_clock = use24;
-    timesync_save_config();
-}
-
 bool timesync_get_24hr(void) {
     return (timesync_config.use_24hr_clock);
 }
 
+void timesync_set_timezone( int32_t timezone ) {
+    timesync_config.timezone = timezone;
+    timesyncToSystem();
+    timesync_send_event_cb( TIME_SYNC_UPDATE, (void *)NULL );
+    timesync_save_config();
+}
+
+void timesync_set_timezone_name( char * timezone_name ) {
+    strncpy( timesync_config.timezone_name, timezone_name, sizeof( timesync_config.timezone_name ) );
+    timesyncToSystem();
+    timesync_send_event_cb( TIME_SYNC_UPDATE, (void *)NULL );
+    timesync_save_config();
+}
+
+void timesync_set_timezone_rule( const char * timezone_rule ) {
+    strncpy( timesync_config.timezone_rule, timezone_rule, sizeof( timesync_config.timezone_rule ) );
+    timesyncToSystem();
+    timesync_send_event_cb( TIME_SYNC_UPDATE, (void *)NULL );
+    timesync_save_config();
+}
+
+void timesync_set_24hr( bool use24 ) {
+    timesync_config.use_24hr_clock = use24;
+    timesyncToSystem();
+    timesync_send_event_cb( TIME_SYNC_UPDATE, (void *)NULL );
+    timesync_save_config();
+}
+
 void timesyncToSystem( void ) {
-    TTGOClass *ttgo = TTGOClass::getWatch();
+    /**
+     * set TZ to GMT0 to get time from RTC
+     */
     setenv("TZ", "GMT0", 1);
     tzset();
-    ttgo->rtc->syncToSystem();
+#ifdef NATIVE_64BIT
+
+#else
+    rtcctl_syncToSystem();
+#endif
+    /**
+     * set back TZ to local settings
+     */
+    log_i("Timesync to system" );
     setenv("TZ", timesync_config.timezone_rule, 1);
     tzset();
 }
 
 void timesyncToRTC( void ) {
-    TTGOClass *ttgo = TTGOClass::getWatch();
+    /**
+     * set TZ to GMT0 for storing it into rtc
+     */
     setenv("TZ", "GMT0", 1);
     tzset();
-    ttgo->rtc->syncToRtc();
+#ifdef NATIVE_64BIT
+
+#else
+    rtcctl_syncToRtc();
+#endif
+    /**
+     * set back TZ to local settings
+     */
+    log_i("Timesync to RTC" );
     setenv("TZ", timesync_config.timezone_rule, 1);
     tzset();
     timesync_send_event_cb( TIME_SYNC_OK, (void *)NULL );
+    timesync_send_event_cb( TIME_SYNC_UPDATE, (void *)NULL );
 }
 
 void timesync_Task( void * pvParameters ) {
+#ifndef NATIVE_64BIT
   log_i("start time sync task, heap: %d", ESP.getFreeHeap() );
 
-  if ( xEventGroupGetBits( time_event_handle ) & TIME_SYNC_REQUEST ) {   
+    if ( xEventGroupGetBits( time_event_handle ) & TIME_SYNC_REQUEST ) { 
+        struct tm info;
+
+        configTzTime( timesync_config.timezone_rule, "pool.ntp.org" );
+
+        if( !getLocalTime( &info ) ) {
+            log_e("Failed to obtain time" );
+        }
+        else {
+            xEventGroupSetBits( time_event_handle, TIME_SYNC_OK );
+        }
+    }
+
+    xEventGroupClearBits( time_event_handle, TIME_SYNC_REQUEST );
+    log_i("finish time sync task, heap: %d", ESP.getFreeHeap() );
+    vTaskDelete( NULL );
+#endif
+}
+
+void timesync_get_current_timestring( char * buf, size_t buf_len ) {
+    time_t now;
     struct tm info;
+    /*
+    * copy current time into now and convert it local time info
+    */
+    time( &now );
+    localtime_r( &now, &info );
 
-    configTzTime( timesync_config.timezone_rule, "pool.ntp.org" );
+    int h = info.tm_hour;
+    int m = info.tm_min;
 
-    if( !getLocalTime( &info ) ) {
-        log_e("Failed to obtain time" );
+    if ( timesync_get_24hr() ) {
+        snprintf( buf, buf_len, "%02d:%02d", h, m );
     }
     else {
-        xEventGroupSetBits( time_event_handle, TIME_SYNC_OK );
+        if (h == 0) h = 12;
+        if (h > 12) h -= 12;
+        snprintf( buf, buf_len, "%d:%02d", h, m );
     }
-  }
-  xEventGroupClearBits( time_event_handle, TIME_SYNC_REQUEST );
-  log_i("finish time sync task, heap: %d", ESP.getFreeHeap() );
-  vTaskDelete( NULL );
+}
+
+void timesync_get_current_datestring( char * buf, size_t buf_len ) {
+    time_t now;
+    struct tm info;
+    /*
+    * copy current time into now and convert it local time info
+    */
+    time( &now );
+    localtime_r( &now, &info );
+
+    strftime( buf, sizeof( buf_len ), "%a %d.%b %Y", &info );
+}
+
+bool timesync_is_between( struct tm start, struct tm end ) {
+    time_t now;
+    struct tm info;
+    /*
+    * copy current time into now and convert it local time info
+    */
+    time( &now );
+    localtime_r( &now, &info );
+
+    // differentiate between silencing over the day or night
+    if (start.tm_hour < end.tm_hour || (start.tm_hour == end.tm_hour && start.tm_min < end.tm_min)) {
+        bool startPassed = info.tm_hour > start.tm_hour || (info.tm_hour == start.tm_hour && info.tm_min > start.tm_min);
+        bool endPassed = info.tm_hour < end.tm_hour || (info.tm_hour == end.tm_hour && info.tm_min < end.tm_min);
+        return startPassed && endPassed;
+    } else {
+        bool startPassed = info.tm_hour > start.tm_hour || (info.tm_hour == start.tm_hour && info.tm_min > start.tm_min);
+        bool endPassed = info.tm_hour < end.tm_hour || (info.tm_hour == end.tm_hour && info.tm_min < end.tm_min);
+        return startPassed || endPassed;
+    }
 }

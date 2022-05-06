@@ -30,6 +30,8 @@
 #include "gui/mainbar/main_tile/main_tile.h"
 #include "gui/mainbar/mainbar.h"
 #include "gui/statusbar.h"
+#include "gui/widget_factory.h"
+#include "gui/widget_styles.h"
 
 #include "hardware/sound.h"
 
@@ -76,7 +78,7 @@ static void exit_bluebox_app_main_event_cb( lv_obj_t * obj, lv_event_t event );
 void bluebox_app_main_setup( uint32_t tile_num ) {
 
     bluebox_app_main_tile = mainbar_get_tile_obj( tile_num );
-    lv_style_copy( &bluebox_app_main_style, mainbar_get_style() );
+    lv_style_copy( &bluebox_app_main_style, APP_STYLE );
 
     // whistle
     lv_obj_t * whistle_btn = lv_imgbtn_create( bluebox_app_main_tile, NULL);
@@ -218,93 +220,98 @@ void bluebox_app_main_setup( uint32_t tile_num ) {
     lv_obj_set_event_cb( exit_btn, exit_bluebox_app_main_event_cb );
 }
 
+void play_out(const char *filename)
+{
+    sound_play_spiffs_mp3(filename);
+}
+
 static void enter_bluebox_app_whistle_event_cb( lv_obj_t * obj, lv_event_t event ) {
     switch( event ) {
-        case( LV_EVENT_CLICKED ):      sound_play_spiffs_mp3( "/2600.mp3" );
+        case( LV_EVENT_CLICKED ):      play_out( "/2600.mp3" );
                                        break;
     }
 }
 
 static void enter_bluebox_app_zero_event_cb( lv_obj_t * obj, lv_event_t event ) {
     switch( event ) {
-        case( LV_EVENT_CLICKED ):      sound_play_spiffs_mp3( "/0.mp3" );
+        case( LV_EVENT_CLICKED ):      play_out( "/0.mp3" );
                                        break;
     }
 }
 
 static void enter_bluebox_app_one_event_cb( lv_obj_t * obj, lv_event_t event ) {
     switch( event ) {
-        case( LV_EVENT_CLICKED ):      sound_play_spiffs_mp3( "/1.mp3" );
+        case( LV_EVENT_CLICKED ):      play_out( "/1.mp3" );
                                        break;
     }
 }
 
 static void enter_bluebox_app_two_event_cb( lv_obj_t * obj, lv_event_t event ) {
     switch( event ) {
-        case( LV_EVENT_CLICKED ):      sound_play_spiffs_mp3( "/2.mp3" ); 
+        case( LV_EVENT_CLICKED ):      play_out( "/2.mp3" ); 
                                        break;
     }
 }
 
 static void enter_bluebox_app_three_event_cb( lv_obj_t * obj, lv_event_t event ) {
     switch( event ) {
-        case( LV_EVENT_CLICKED ):      sound_play_spiffs_mp3( "/3.mp3" );
+        case( LV_EVENT_CLICKED ):      play_out( "/3.mp3" );
                                        break;
     }
 }
 
 static void enter_bluebox_app_four_event_cb( lv_obj_t * obj, lv_event_t event ) {
     switch( event ) {
-        case( LV_EVENT_CLICKED ):      sound_play_spiffs_mp3( "/4.mp3" );
+        case( LV_EVENT_CLICKED ):      play_out( "/4.mp3" );
                                        break;
     }
 }
 
 static void enter_bluebox_app_five_event_cb( lv_obj_t * obj, lv_event_t event ) {
     switch( event ) {
-        case( LV_EVENT_CLICKED ):     sound_play_spiffs_mp3( "/5.mp3" );
+        case( LV_EVENT_CLICKED ):     play_out( "/5.mp3" );
                                       break;
     }
 }
 
 static void enter_bluebox_app_six_event_cb( lv_obj_t * obj, lv_event_t event ) {
     switch( event ) {
-        case( LV_EVENT_CLICKED ):     sound_play_spiffs_mp3( "/6.mp3" );
+        case( LV_EVENT_CLICKED ):     play_out( "/6.mp3" );
                                       break;
     }
 }
 
 static void enter_bluebox_app_seven_event_cb( lv_obj_t * obj, lv_event_t event ) {
     switch( event ) {
-        case( LV_EVENT_CLICKED ):      sound_play_spiffs_mp3( "/7.mp3" );
+        case( LV_EVENT_CLICKED ):      play_out( "/7.mp3" );
                                        break;
     }
 }
 
 static void enter_bluebox_app_eight_event_cb( lv_obj_t * obj, lv_event_t event ) {
     switch( event ) {
-        case( LV_EVENT_CLICKED ):      sound_play_spiffs_mp3( "/8.mp3" );
+        case( LV_EVENT_CLICKED ):      play_out( "/8.mp3" );
                                        break;
     }
 }
 
 static void enter_bluebox_app_nine_event_cb( lv_obj_t * obj, lv_event_t event ) {
     switch( event ) {
-        case( LV_EVENT_CLICKED ):      sound_play_spiffs_mp3( "/9.mp3" );
+        case( LV_EVENT_CLICKED ):      play_out( "/9.mp3" );
                                        break;
     }
 }
 
 static void enter_bluebox_app_star_event_cb( lv_obj_t * obj, lv_event_t event ) {
     switch( event ) {
-        case( LV_EVENT_CLICKED ):       sound_play_spiffs_mp3( "/ST.mp3" );
+        case( LV_EVENT_CLICKED ):       play_out( "/ST.mp3" );
                                         break;
     }
 }
 
 static void enter_bluebox_app_hash_event_cb( lv_obj_t * obj, lv_event_t event ) {
     switch( event ) {
-        case( LV_EVENT_CLICKED ):       sound_play_spiffs_mp3( "/KP.mp3" );
+        case( LV_EVENT_CLICKED ):       play_out( "/KP.mp3" );
                                         break;
     }
 }
