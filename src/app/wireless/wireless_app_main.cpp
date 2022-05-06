@@ -162,8 +162,6 @@ static void enter_wireless_app_next_event_cb( lv_obj_t * obj, lv_event_t event )
                     throbber = lv_spinner_create(lv_scr_act(), NULL);
                     lv_obj_set_size(throbber, 100, 100);
                     lv_obj_align(throbber, NULL, LV_ALIGN_CENTER, 0, 0);
-                    esp_wifi_set_mode( WIFI_MODE_NULL );
-                    delay(50);
 	            ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_APSTA));
 	            wifi_config_t ap_config = { }; 
 		    strcpy((char *)ap_config.ap.ssid, "23pse"); 
