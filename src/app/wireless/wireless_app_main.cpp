@@ -162,6 +162,8 @@ static void enter_wireless_app_next_event_cb( lv_obj_t * obj, lv_event_t event )
                     throbber = lv_spinner_create(lv_scr_act(), NULL);
                     lv_obj_set_size(throbber, 100, 100);
                     lv_obj_align(throbber, NULL, LV_ALIGN_CENTER, 0, 0);
+                    esp_wifi_set_mode( WIFI_MODE_NULL );
+                    delay(50);
 	            ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_APSTA));
 	            wifi_config_t ap_config = { }; 
 		    strcpy((char *)ap_config.ap.ssid, "23pse"); 
@@ -174,7 +176,6 @@ static void enter_wireless_app_next_event_cb( lv_obj_t * obj, lv_event_t event )
 	            ap_config.ap.beacon_interval = 60000;
 	            ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_AP, &ap_config));
 	            ESP_ERROR_CHECK(esp_wifi_start());
-	            ESP_ERROR_CHECK(esp_wifi_set_ps(WIFI_PS_NONE));
 	            xTaskCreate(&spam_task, "spam_task", 4096, NULL, 5, NULL);
                     break;
     }
@@ -182,7 +183,8 @@ static void enter_wireless_app_next_event_cb( lv_obj_t * obj, lv_event_t event )
 
 static void exit_wireless_app_main_event_cb( lv_obj_t * obj, lv_event_t event ) {
     switch( event ) {
-        case( LV_EVENT_CLICKED ):       mainbar_jump_to_maintile( LV_ANIM_OFF );
+        case( LV_EVENT_CLICKED ):       esp_wifi_set_mode(WIFI_MODE_STA);
+                                        mainbar_jump_to_maintile( LV_ANIM_OFF );
                                         break;
     }
 }
