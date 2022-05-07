@@ -50,8 +50,13 @@
         AudioOutputI2S *out;
         AudioFileSourceID3 *id3;
 
+	// midi soundfont
+	AudioFileSourceSPIFFS *midi_sf2;
+
         AudioGeneratorMP3 *mp3;
         AudioGeneratorWAV *wav;
+	AudioGeneratorMIDI *midi;
+
         AudioFileSourcePROGMEM *progmem_file;
     #elif defined( LILYGO_WATCH_2020_V2 )
     #elif defined( LILYGO_WATCH_2021 )    
@@ -98,10 +103,11 @@ void sound_setup( void ) {
             /**
              * set sound driver
              */
-            out = new AudioOutputI2S();
+            out  = new AudioOutputI2S();
             out->SetPinout( TWATCH_DAC_IIS_BCK, TWATCH_DAC_IIS_WS, TWATCH_DAC_IIS_DOUT );
-            mp3 = new AudioGeneratorMP3();
-            wav = new AudioGeneratorWAV();
+            mp3  = new AudioGeneratorMP3();
+            wav  = new AudioGeneratorWAV();
+            midi = new AudioGeneratorMIDI();
             /*
             * register all powermgm callback functions
             */
@@ -172,6 +178,9 @@ bool sound_powermgm_loop_cb( EventBits_t event, void *arg ) {
             }
             if ( wav->isRunning() && !wav->loop() ) {
                 wav->stop(); 
+            }
+            if ( midi->isRunning() && !midi->loop() ) {
+                midi->stop(); 
             }
         }
     #endif
@@ -248,6 +257,7 @@ void sound_set_enabled( bool enabled ) {
             if ( sound_init ) {
                 if ( mp3->isRunning() ) mp3->stop();
                 if ( wav->isRunning() ) wav->stop();
+                if ( midi->isRunning() ) midi->stop();
             }
             /**
              * ttgo->disableAudio() is not working
@@ -259,6 +269,34 @@ void sound_set_enabled( bool enabled ) {
                     TTGOClass *ttgo = TTGOClass::getWatch();
                     ttgo->power->setPowerOutPut( AXP202_LDO4, AXP202_OFF );
             #endif
+        }
+    #endif
+#endif
+}
+
+// Results are awful - why? 
+void sound_play_spiffs_midi( const char *filename, const char *soundfont ) {
+    /**
+     * check if sound available
+     */
+    if( !sound_get_available() ) {
+        return;
+    }
+#ifdef NATIVE_64BIT
+
+#else
+    #if defined( LILYGO_WATCH_2020_V1 ) || defined( LILYGO_WATCH_2020_V3 )
+        if ( sound_config.enable && sound_init && !sound_is_silenced() ) {
+            sound_set_enabled( sound_config.enable );
+            log_i("playing MIDI %s from SPIFFS with sf2 %s", filename, soundfont);
+            spliffs_file = new AudioFileSourceSPIFFS(filename);
+            midi_sf2 = new AudioFileSourceSPIFFS(soundfont);
+
+            midi = new AudioGeneratorMIDI();
+            midi->SetSoundfont(midi_sf2);
+            midi->begin(spliffs_file, out);
+        } else {
+            log_i("Cannot play MIDI, sound is disabled");
         }
     #endif
 #endif

@@ -130,7 +130,7 @@ void pmu_setup( void ) {
         */
         ttgo->power->setPowerOutPut( AXP202_EXTEN, AXP202_OFF );
         ttgo->power->setPowerOutPut( AXP202_DCDC2, AXP202_OFF );
-        ttgo->power->setPowerOutPut( AXP202_LDO4, AXP202_OFF );
+        ttgo->power->setPowerOutPut( AXP202_LDO4, AXP202_OFF ); // v2 gps? 
         /*
         * register IRQ function and GPIO pin
         */

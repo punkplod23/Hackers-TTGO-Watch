@@ -30,6 +30,13 @@
     #define SOUNDCTL_VOLUME            _BV(1)         /** @brief event mask for sound volume change, callback arg is (uint8_t*)  */
 
     /**
+     * @brief play MIDI file from SPIFFS by path/filename with soundfont by path/filename
+     * 
+     * @param   filename    the SPIFFS path to the file to be played
+     * @param   soundfont   the SPIFFS path to the MIDI sf2 soundfont
+     */
+    void sound_play_spiffs_midi( const char *filename, const char *soundfont );
+    /**
      * @brief play mp3 file from SPIFFS by path/filename
      * 
      * @param   filename    the SPIFFS path to the file to be played
