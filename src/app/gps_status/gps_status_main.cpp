@@ -354,6 +354,4 @@ void gps_status_activate_cb(void)
     gps_status_block_return_maintile = display_get_block_return_maintile();
     /** overwrite "block the maintile" value */
     display_set_block_return_maintile( true );
-    setCpuFrequencyMhz(80);
-
 }
