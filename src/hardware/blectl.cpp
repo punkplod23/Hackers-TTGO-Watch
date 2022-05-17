@@ -33,6 +33,10 @@
 #include "utils/alloc.h"
 #include "utils/bluejsonrequest.h"
 
+#include "esp_bt.h"
+#include "esp_bt_main.h"
+#include "esp_bt_device.h"
+
 #ifdef NATIVE_64BIT
     #include "utils/logging.h"
     #include "utils/millis.h"
@@ -51,6 +55,7 @@
     #include <BLEServer.h>
     #include <BLEUtils.h>
     #include <BLE2902.h>
+    #include <BleKeyboard.h>
     #include "blebatctl.h"
     #include "blestepctl.h"
 
@@ -63,6 +68,8 @@ blectl_config_t blectl_config;
 blectl_msg_t blectl_msg;
 callback_t *blectl_callback = NULL;
 uint8_t txValue = 0;
+
+BleKeyboard bleKeyboard;
 
 bool blectl_send_event_cb( EventBits_t event, void *arg );
 bool blectl_powermgm_event_cb( EventBits_t event, void *arg );
@@ -166,7 +173,6 @@ void blectl_loop( void );
                     return;
                 }
             }
-            
             log_e("authentication not handle but %s. reason: %02x", cmpl.success ? "successful" : "not successful", cmpl.fail_reason );
         }
     };
@@ -235,9 +241,11 @@ void blectl_setup( void ) {
         #endif
         blectl_status = xEventGroupCreate();
 
-        esp_bt_controller_enable( ESP_BT_MODE_BLE );
-        esp_bt_controller_mem_release( ESP_BT_MODE_CLASSIC_BT );
-        esp_bt_mem_release( ESP_BT_MODE_CLASSIC_BT );
+        // use bluetooth dual mode (ble and classic bt)
+        esp_bt_controller_enable( ESP_BT_MODE_BTDM );
+        esp_bluedroid_init();
+        esp_bluedroid_enable();
+
         blectl_msg_queue = xQueueCreate( 5, sizeof( char * ) );
         if ( blectl_msg_queue == NULL ) {
             log_e("Failed to allocate msg queue");
@@ -454,6 +462,44 @@ void blectl_set_disable_only_disconnected( bool disable_only_disconnected ) {
 void blectl_set_show_notification( bool show_notification ) {        
     blectl_config.show_notification = show_notification;
     blectl_config.save();
+}
+
+void blectl_bluetooth_keyboard(void) {
+    log_i("bluetooth keyboard on");
+    bleKeyboard.begin();
+}
+
+void blectl_bluetooth_sendkeys(void) {
+    //if(bleKeyboard.isConnected()) 
+    //{
+        log_i("Sending 'Hello world'...");
+        bleKeyboard.print("Hello world");
+
+        delay(1000);
+
+        log_i("Sending Enter key...");
+        bleKeyboard.write(KEY_RETURN);
+
+        delay(1000);
+
+        log_i("Sending Play/Pause media key...");
+        bleKeyboard.write(KEY_MEDIA_PLAY_PAUSE);
+
+        delay(1000);
+    
+       //
+       // Below is an example of pressing multiple keyboard modifiers 
+       // which by default is commented out. 
+       // 
+      /* Serial.println("Sending Ctrl+Alt+Delete...");
+      bleKeyboard.press(KEY_LEFT_CTRL);
+      bleKeyboard.press(KEY_LEFT_ALT);
+      bleKeyboard.press(KEY_DELETE);
+      delay(100);
+      bleKeyboard.releaseAll();
+      */
+
+    //}
 }
 
 void blectl_set_advertising( bool advertising ) {  

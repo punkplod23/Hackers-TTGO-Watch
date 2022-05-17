@@ -29,6 +29,11 @@
     #define SOUNDCTL_ENABLED           _BV(0)         /** @brief event mask for sound enabled/disable, callback arg is (bool*) */
     #define SOUNDCTL_VOLUME            _BV(1)         /** @brief event mask for sound volume change, callback arg is (uint8_t*)  */
 
+    void sound_a2dp_sink(void);
+    void sound_a2dp_source(void);
+    void sound_generate_dtmf( const float mf1, const float mf2 );
+    void sound_generate_sine( const float freq );
+
     /**
      * @brief play MIDI file from SPIFFS by path/filename with soundfont by path/filename
      * 

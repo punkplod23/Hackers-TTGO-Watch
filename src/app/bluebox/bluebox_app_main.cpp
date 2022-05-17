@@ -34,6 +34,7 @@
 #include "gui/widget_styles.h"
 
 #include "hardware/sound.h"
+#include "hardware/blectl.h"
 
 lv_obj_t *bluebox_app_main_tile = NULL;
 lv_style_t bluebox_app_main_style;
@@ -220,98 +221,93 @@ void bluebox_app_main_setup( uint32_t tile_num ) {
     lv_obj_set_event_cb( exit_btn, exit_bluebox_app_main_event_cb );
 }
 
-void play_out(const char *filename)
-{
-    sound_play_spiffs_mp3(filename);
-}
-
 static void enter_bluebox_app_whistle_event_cb( lv_obj_t * obj, lv_event_t event ) {
     switch( event ) {
-        case( LV_EVENT_CLICKED ):      play_out( "/2600.mp3" );
+        case( LV_EVENT_CLICKED ):      sound_generate_sine(2600.f);
                                        break;
     }
 }
 
 static void enter_bluebox_app_zero_event_cb( lv_obj_t * obj, lv_event_t event ) {
     switch( event ) {
-        case( LV_EVENT_CLICKED ):      play_out( "/0.mp3" );
+        case( LV_EVENT_CLICKED ):      sound_generate_dtmf(1300.f,1500.f);
                                        break;
     }
 }
 
 static void enter_bluebox_app_one_event_cb( lv_obj_t * obj, lv_event_t event ) {
     switch( event ) {
-        case( LV_EVENT_CLICKED ):      play_out( "/1.mp3" );
+        case( LV_EVENT_CLICKED ):      sound_generate_dtmf(700.f,900.f);
                                        break;
     }
 }
 
 static void enter_bluebox_app_two_event_cb( lv_obj_t * obj, lv_event_t event ) {
     switch( event ) {
-        case( LV_EVENT_CLICKED ):      play_out( "/2.mp3" ); 
+        case( LV_EVENT_CLICKED ):      sound_generate_dtmf(700.f,1100.f);
                                        break;
     }
 }
 
 static void enter_bluebox_app_three_event_cb( lv_obj_t * obj, lv_event_t event ) {
     switch( event ) {
-        case( LV_EVENT_CLICKED ):      play_out( "/3.mp3" );
+        case( LV_EVENT_CLICKED ):      sound_generate_dtmf(900.f,1100.f);
                                        break;
     }
 }
 
 static void enter_bluebox_app_four_event_cb( lv_obj_t * obj, lv_event_t event ) {
     switch( event ) {
-        case( LV_EVENT_CLICKED ):      play_out( "/4.mp3" );
+        case( LV_EVENT_CLICKED ):      sound_generate_dtmf(700.f,1300.f);
                                        break;
     }
 }
 
 static void enter_bluebox_app_five_event_cb( lv_obj_t * obj, lv_event_t event ) {
     switch( event ) {
-        case( LV_EVENT_CLICKED ):     play_out( "/5.mp3" );
+        case( LV_EVENT_CLICKED ):     sound_generate_dtmf(900.f,1300.f);
                                       break;
     }
 }
 
 static void enter_bluebox_app_six_event_cb( lv_obj_t * obj, lv_event_t event ) {
     switch( event ) {
-        case( LV_EVENT_CLICKED ):     play_out( "/6.mp3" );
+        case( LV_EVENT_CLICKED ):     sound_generate_dtmf(1100.f,1300.f);
                                       break;
     }
 }
 
 static void enter_bluebox_app_seven_event_cb( lv_obj_t * obj, lv_event_t event ) {
     switch( event ) {
-        case( LV_EVENT_CLICKED ):      play_out( "/7.mp3" );
+        case( LV_EVENT_CLICKED ):      sound_generate_dtmf(700.f,1500.f);
                                        break;
     }
 }
 
 static void enter_bluebox_app_eight_event_cb( lv_obj_t * obj, lv_event_t event ) {
     switch( event ) {
-        case( LV_EVENT_CLICKED ):      play_out( "/8.mp3" );
+        case( LV_EVENT_CLICKED ):      sound_generate_dtmf(900.f,1500.f);
                                        break;
     }
 }
 
 static void enter_bluebox_app_nine_event_cb( lv_obj_t * obj, lv_event_t event ) {
     switch( event ) {
-        case( LV_EVENT_CLICKED ):      play_out( "/9.mp3" );
+        case( LV_EVENT_CLICKED ):      sound_generate_dtmf(1100.f,1500.f);
                                        break;
     }
 }
 
 static void enter_bluebox_app_star_event_cb( lv_obj_t * obj, lv_event_t event ) {
     switch( event ) {
-        case( LV_EVENT_CLICKED ):       play_out( "/ST.mp3" );
+        case( LV_EVENT_CLICKED ):       sound_generate_dtmf(1500.f,1700.f);
                                         break;
     }
 }
 
 static void enter_bluebox_app_hash_event_cb( lv_obj_t * obj, lv_event_t event ) {
     switch( event ) {
-        case( LV_EVENT_CLICKED ):       play_out( "/KP.mp3" );
+        case( LV_EVENT_CLICKED ):       sound_generate_dtmf(1100.f,1700.f);
                                         break;
     }
 }
